@@ -1,0 +1,134 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum HousingType {
+  ONE_ROOM
+  OFFICETEL
+  DORM
+  APARTMENT
+  VILLA
+}
+
+enum ContractType {
+  MONTHLY
+  JEONSE
+  DORM_FEE
+  OWNED
+}
+
+enum TaskCategory {
+  ADMIN
+  WASTE
+  HOUSING
+  LIFE
+}
+
+enum TaskSource {
+  SEED
+  PROMOTED
+}
+
+enum Confidence {
+  GROUNDED
+  PARTIAL
+  UNKNOWN
+}
+
+enum QuestionStatus {
+  OPEN
+  ANSWERED
+  PROMOTED
+}
+
+enum UserRole {
+  MEMBER
+  ADMIN
+}
+
+model Task {
+  id            String       @id @default(cuid())
+  title         String
+  why           String
+  dueOffsetDays Int?
+  howTo         String
+  linkUrl       String?
+  placeName     String?
+  placeAddress  String?
+  placePhone    String?
+  category      TaskCategory
+
+  housingTypes  HousingType[]
+  contractTypes ContractType[]
+  requiresCar   Boolean        @default(false)
+  requiresPet   Boolean        @default(false)
+  studentOnly   Boolean        @default(false)
+
+  source                 TaskSource @default(SEED)
+  promotedFromQuestionId String?
+  sourceNote             String
+  verifiedAt             DateTime
+  isPublished            Boolean    @default(true)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  nickname     String
+  role         UserRole @default(MEMBER)
+  createdAt    DateTime @default(now())
+
+  questions     Question[]
+  answers       Answer[]
+  confirmations Confirmation[]
+}
+
+model Question {
+  id              String         @id @default(cuid())
+  text            String
+  askerId         String?
+  asker           User?          @relation(fields: [askerId], references: [id])
+  ctxHousingType  HousingType?
+  ctxContractType ContractType?
+  aiAnswer        String?
+  sourceIds       String[]
+  confidence      Confidence     @default(UNKNOWN)
+  status          QuestionStatus @default(OPEN)
+  createdAt       DateTime       @default(now())
+
+  answers Answer[]
+}
+
+model Answer {
+  id         String   @id @default(cuid())
+  questionId String
+  question   Question @relation(fields: [questionId], references: [id], onDelete: Cascade)
+  authorId   String
+  author     User     @relation(fields: [authorId], references: [id])
+  text       String
+  isHidden   Boolean  @default(false)
+  verifiedAt DateTime @default(now())
+  createdAt  DateTime @default(now())
+
+  confirmations Confirmation[]
+}
+
+model Confirmation {
+  id        String   @id @default(cuid())
+  answerId  String
+  answer    Answer   @relation(fields: [answerId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id])
+  createdAt DateTime @default(now())
+
+  @@unique([answerId, userId])
+}
