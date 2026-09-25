@@ -1,9 +1,9 @@
-# C — AI 파이프라인
+# C — AI 파이프라인 (김권섭)
 
 [team/README.md](README.md)의 공용 타입과 원칙을 먼저 읽어주세요. 이 문서는 그 위에서 C가 맡을 것만 다룹니다.
 
 **맡는 것:** 근거 검증(`grounding`)과 폴백 검색(`search`) 순수 로직 + 테스트, Gemini 호출, `/api/ask`
-**안 맡는 것:** 화면(A), 스키마·`matching`·`dday`·다른 API(B), 시드 조사(D)
+**안 맡는 것:** 화면(정우성), 스키마·`matching`·`dday`·다른 API(우희태), 시드 조사(박용민)
 
 ---
 
