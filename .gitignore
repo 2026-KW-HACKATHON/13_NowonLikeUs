@@ -1,5 +1,7 @@
 CLAUDE.md
-docs/
+
+# 이전 프로젝트(월계품앗이) 자료와 작업 기록
+docs/archive/
 
 # --- 환경 변수 (비밀값) ---
 .env
