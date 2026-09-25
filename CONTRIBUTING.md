@@ -8,15 +8,15 @@
 ## 브랜치 구조
 
 ```
-A/화면작업   ─┐
-B/api작업    ─┼─→ dev (PR로 자주 머지) ─→ (주기적으로) ─→ master ─→ Vercel 자동 배포
-C/프롬프트   ─┤
-D/시드데이터 ─┘
+useong/화면작업   ─┐
+huitae/api작업    ─┼─→ dev (PR로 자주 머지) ─→ (주기적으로) ─→ master ─→ Vercel 자동 배포
+gwonseop/프롬프트 ─┤
+yongmin/시드데이터 ─┘
 ```
 
 - **작업 브랜치 → `dev`** — 평소 작업은 전부 여기로 PR. 자주, 작은 단위로 머지합니다.
 - **`dev` → `master`** — `dev`가 안정된 상태일 때만 주기적으로 머지합니다 (회의 전, 시연 준비 직전). 머지되는 순간 실제 배포에 반영되므로 신중하게 진행합니다.
-- `dev → master` 머지는 **저장소 관리 담당**이 진행합니다.
+- `dev → master` 머지는 **정우성(저장소 관리)** 이 진행합니다.
 - **`master`·`dev` 모두 직접 push를 막습니다.** 반드시 작업 브랜치 + PR로 작업합니다.
 
 ## 1. dev 최신화 (작업 시작 전 항상 먼저)
@@ -34,10 +34,10 @@ git checkout -b <이름>/<작업내용>
 
 예시:
 
-- 프론트엔드: `git checkout -b useong/task-list`
-- 백엔드: `git checkout -b <이름>/match-api`
-- AI: `git checkout -b <이름>/gemini-grounding`
-- 데이터 조사: `git checkout -b <이름>/seed-waste`
+- 정우성(프론트엔드): `git checkout -b useong/task-list`
+- 우희태(백엔드): `git checkout -b huitae/match-api`
+- 김권섭(AI): `git checkout -b gwonseop/gemini-grounding`
+- 박용민(데이터 조사): `git checkout -b yongmin/seed-waste`
 
 ## 3. 작업 & 커밋
 
@@ -120,7 +120,7 @@ Feat: 프로필 매칭에 반려동물 조건 추가
 
 **Prisma 스키마나 API 요청·응답 형태를 바꾸는 PR은 병합 전에 관련 담당자에게 알립니다.**
 
-화면·API·AI 담당이 **같은 스키마 위에서 병렬로 작업**합니다. 말 없이 바꾸면 세 명이 동시에 깨집니다. 특히 다음은 반드시 공유합니다.
+정우성(화면)·우희태(API)·김권섭(AI)이 **같은 스키마 위에서 병렬로 작업**합니다. 말 없이 바꾸면 세 명이 동시에 깨집니다. 특히 다음은 반드시 공유합니다.
 
 - `prisma/schema.prisma`의 모델·필드·enum 변경
 - `lib/types.ts`의 `Profile` · `TaskConditions` · `MatchedTask` 변경
