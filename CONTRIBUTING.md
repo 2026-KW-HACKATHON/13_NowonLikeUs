@@ -10,7 +10,7 @@
 ```
 useong/화면작업   ─┐
 huitae/api작업    ─┼─→ dev (PR로 자주 머지) ─→ (주기적으로) ─→ master ─→ Vercel 자동 배포
-gwonseop/프롬프트 ─┤
+kwonseop/프롬프트 ─┤
 yongmin/시드데이터 ─┘
 ```
 
@@ -36,7 +36,7 @@ git checkout -b <이름>/<작업내용>
 
 - 정우성(프론트엔드): `git checkout -b useong/task-list`
 - 우희태(백엔드): `git checkout -b huitae/match-api`
-- 김권섭(AI): `git checkout -b gwonseop/gemini-grounding`
+- 김권섭(AI): `git checkout -b kwonseop/gemini-grounding`
 - 박용민(데이터 조사): `git checkout -b yongmin/seed-waste`
 
 ## 3. 작업 & 커밋
