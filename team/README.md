@@ -80,7 +80,7 @@ export interface MatchedTask {
   title: string;
   why: string;
   howTo: string;
-  category: string;
+  category: TaskCategory;
   linkUrl: string | null;
   placeName: string | null;
   placeAddress: string | null;
@@ -91,6 +91,8 @@ export interface MatchedTask {
   verifiedAt: string;   // ISO 8601
 }
 ```
+
+`lib/types.ts` 에는 위 타입 외에 **API 요청·응답 타입**도 함께 있습니다 — `MatchRequest` · `MatchResponse` · `TaskDetailResponse` · `AskRequest` · `AskResponse`. 라우트를 만들 때 반환 타입으로 쓰면 화면과 어긋나는 걸 컴파일 단계에서 잡습니다.
 
 ## 전원이 지키는 원칙 셋
 
