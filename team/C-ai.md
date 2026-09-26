@@ -213,6 +213,11 @@ task:{id} | {title} | {why} | {howTo}
 7. **`confidence`가 `UNKNOWN`이면 `answer`를 `null`로 보냅니다.** 근거 없는 문장을 화면에 띄우지 않습니다
 8. `Question`을 저장합니다 — `text`, `aiAnswer`, `sourceIds`(검증 통과분만), `confidence`, `ctxHousingType`, `ctxContractType`
 
+**구현 시 연결 규칙:** 5~7번은 `lib/grounding.ts`의 `groundAnswer(ai, knownIds)`로 함께 처리합니다.
+반환된 `answer`와 `confidence`를 API 응답 및 `Question.aiAnswer` 저장에 사용하고,
+카드와 저장할 근거는 `validSourceIds`에서 선택합니다. `ai.answer`를 직접 응답하거나 저장하지 않습니다.
+AI가 `GROUNDED`라고 했어도 서버 검증 후 `UNKNOWN`이면 `answer`는 반드시 `null`입니다.
+
 **`askerId`는 채우지 마세요.** 9/28엔 로그인이 없어 nullable입니다.
 
 **상황 스냅샷(`ctx*`)을 남기는 이유:** 본선에서 이 질문이 할 일로 승격될 때 "이 답이 누구에게 해당하는지" 추론하는 근거가 됩니다. 전세 세입자가 물어서 나온 답이 기숙사생에게 뜨면 안 됩니다.
