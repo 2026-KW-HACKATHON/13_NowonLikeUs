@@ -178,3 +178,4 @@ npm test
 ## 기여
 
 브랜치 전략, 커밋 메시지 규칙, PR 절차는 [CONTRIBUTING.md](CONTRIBUTING.md)를 따릅니다.
+---
