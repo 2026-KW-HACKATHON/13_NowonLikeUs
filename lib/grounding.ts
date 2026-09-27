@@ -6,6 +6,29 @@ export interface GroundingResult {
   droppedSourceIds: string[];
 }
 
+export type GroundedAnswer = Omit<GroundingResult, 'confidence'> & (
+  | { confidence: 'UNKNOWN'; answer: null }
+  | { confidence: Exclude<Confidence, 'UNKNOWN'>; answer: string }
+);
+
+/**
+ * /api/ask의 응답 및 aiAnswer 저장에는 AI 원문 대신 이 결과를 사용한다.
+ * AI의 자기 평가가 아닌 서버 검증 후 신뢰도를 기준으로 답변을 차단한다.
+ * 이 함수는 근거 ID의 존재만 검증하며, 답변 내용의 정확성을 보장하지 않는다.
+ */
+export function groundAnswer(
+  ai: { answer: string; sourceIds: string[]; confidence: Confidence },
+  known: Set<string>,
+): GroundedAnswer {
+  const result = verifyGrounding(ai.sourceIds, known, ai.confidence);
+
+  if (result.confidence === 'UNKNOWN') {
+    return { ...result, confidence: 'UNKNOWN', answer: null };
+  }
+
+  return { ...result, confidence: result.confidence, answer: ai.answer };
+}
+
 /**
  * AI가 제시한 근거 ID를 실제 지식 ID와 대조하고,
  * 서버가 검증할 수 있는 범위까지만 신뢰한다.
