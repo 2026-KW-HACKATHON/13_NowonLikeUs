@@ -106,7 +106,7 @@ npm run dev
 |---|---|
 | `DATABASE_URL` | Neon Postgres 연결 문자열 |
 | `GEMINI_API_KEY` | Google AI Studio API 키. **비워둬도 앱은 동작합니다** — 키워드 검색으로 폴백합니다 |
-| `GEMINI_MODEL` | 기본값 `gemini-2.5-flash` |
+| `GEMINI_MODEL` | 기본값 `gemini-3.1-flash-lite` |
 
 AI는 증강이지 필수 경로가 아닙니다. 할 일 목록·상황 매칭·질문 등록은 전부 AI 없이 동작합니다.
 
