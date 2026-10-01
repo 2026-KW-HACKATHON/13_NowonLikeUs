@@ -65,7 +65,7 @@ export default function TaskDetailPage() {
   if (state.kind === 'loading') {
     return (
       <main>
-        <p className="lead" role="status">
+        <p className="empty" role="status">
           불러오는 중입니다…
         </p>
       </main>
@@ -78,8 +78,10 @@ export default function TaskDetailPage() {
         <Link href="/tasks" className="back">
           ← 내 할 일
         </Link>
-        <h1>{state.kind === 'notfound' ? '없는 항목입니다' : '불러오지 못했습니다'}</h1>
-        <p className="empty">
+        <h1 className="page-title">
+          {state.kind === 'notfound' ? '없는 항목입니다' : '불러오지 못했습니다'}
+        </h1>
+        <p className="lead">
           {state.kind === 'notfound'
             ? '링크가 바뀌었거나 내려간 항목일 수 있습니다.'
             : '잠시 후 다시 시도해 주세요.'}
@@ -97,12 +99,13 @@ export default function TaskDetailPage() {
         ← 내 할 일
       </Link>
 
-      <div className="card-meta">
-        <span className={`badge ${due.tone}`}>{due.text}</span>
-        <span className="badge category">{CATEGORY_LABEL[task.category]}</span>
+      <div className="detail-head" data-category={task.category}>
+        <div className="detail-head__top">
+          <span className="detail-head__cat">{CATEGORY_LABEL[task.category]}</span>
+          <span className={`detail-head__due ${due.tone}`}>{due.text}</span>
+        </div>
+        <h1>{task.title}</h1>
       </div>
-
-      <h1>{task.title}</h1>
 
       {task.overdue && <p className="warn">기한이 지났습니다. 과태료가 붙을 수 있습니다.</p>}
       {task.stale && (
@@ -152,21 +155,14 @@ export default function TaskDetailPage() {
       {task.linkUrl && (
         <section className="detail-section">
           <h2>온라인으로</h2>
-          <a
-            className="button-link"
-            href={task.linkUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-          >
+          <a className="button-link" href={task.linkUrl} target="_blank" rel="noopener noreferrer">
             신청 페이지 열기
             <span className="sr-only"> (새 창에서 열림)</span>
           </a>
         </section>
       )}
 
-      <p className="asof">
-        {asOfLabel(task.verifiedAt)} · 출처를 확인한 날짜입니다
-      </p>
+      <p className="asof">{asOfLabel(task.verifiedAt)} · 출처를 확인한 날짜입니다</p>
     </main>
   );
 }

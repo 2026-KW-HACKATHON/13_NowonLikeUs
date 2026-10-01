@@ -1,27 +1,54 @@
 /*
- * 배리어프리 트랙이므로 기본 글씨를 키우고 대비를 확보한다.
- * 본문 18px, 터치 타깃 최소 48px, 폰트는 시스템 한글 폰트 우선.
+ * 「월계는 처음이라」 화면 기준.
  *
- * 색은 WCAG AAA(본문 7:1)를 기준으로 계산해서 골랐다. 눈대중으로 정하지 않는다.
- *   --text 15.9:1  --text-soft 7.7:1  --accent 9.1:1  --danger 8.4:1
- * 입력 요소 테두리는 본문이 아니라 UI 경계라서 기준이 3:1(WCAG 1.4.11)이다.
- * --border(면 구분, 1.4:1)로는 모자라므로 --border-control 을 따로 둔다.
+ * 스타일: 공공 에디토리얼 — 굵은 구분선, 큰 숫자, 카테고리 색띠.
+ * 배리어프리 트랙이므로 본문 18px, 터치 타깃 48px 이상, 대비는 WCAG AAA(7:1)로 맞춘다.
+ *
+ * 색은 전부 계산해서 골랐다. 눈대중으로 정하지 않는다.
+ *   본문 15.9:1 · 보조 7.7:1 · 카테고리 잉크 8.6~10.4:1 (각자의 soft 배경 위에서도 7:1 이상)
+ * 입력 요소 테두리는 본문이 아니라 UI 경계라서 기준이 3:1 이다(WCAG 1.4.11).
+ * --rule-soft(면 구분, 1.4:1)로는 모자라므로 --border-control 을 따로 둔다.
+ *
+ * 카테고리를 색으로만 구분하지 않는다. 색띠 옆에 항상 "행정" 같은 글자가 같이 붙는다.
  */
 
 :root {
   --bg: #f7f7f5;
   --surface: #ffffff;
-  --border: #dcdcd6;
-  --border-control: #8a8a7f;
+
   --text: #1c1c1a;
   --text-soft: #4f4f4a;
+
+  /* 에디토리얼의 뼈대. 굵은 선은 --rule, 가는 선은 --rule-soft. */
+  --rule: #1c1c1a;
+  --rule-soft: #dcdcd6;
+  --border-control: #8a8a7f;
+
   --accent: #1a5239;
   --accent-soft: #e6f1eb;
   --on-accent: #ffffff;
   --danger: #8f2a19;
   --danger-soft: #fbeae6;
-  --radius: 12px;
+
+  --cat-admin: #143f7a;
+  --cat-admin-soft: #e4ecf7;
+  --cat-housing: #1a5239;
+  --cat-housing-soft: #e6f1eb;
+  --cat-waste: #7a3a0f;
+  --cat-waste-soft: #f7ece1;
+  --cat-life: #4a2f8f;
+  --cat-life-soft: #ece7f8;
+
+  --radius: 10px;
   --focus: 3px;
+
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+  --space-7: 64px;
 }
 
 /*
@@ -32,16 +59,47 @@
   :root {
     --bg: #141412;
     --surface: #1f1f1c;
-    --border: #45453e;
-    --border-control: #6e6e66;
+
     --text: #f2f2ee;
     --text-soft: #b9b9b1;
+
+    --rule: #f2f2ee;
+    --rule-soft: #45453e;
+    --border-control: #6e6e66;
+
     --accent: #79dca8;
     --accent-soft: #1b3326;
     --on-accent: #10231a;
     --danger: #ff9f88;
     --danger-soft: #3a211b;
+
+    --cat-admin: #8fbdf5;
+    --cat-admin-soft: #15233a;
+    --cat-housing: #79dca8;
+    --cat-housing-soft: #1b3326;
+    --cat-waste: #f0a874;
+    --cat-waste-soft: #33210f;
+    --cat-life: #b9a2f5;
+    --cat-life-soft: #241c3d;
   }
+}
+
+/* 카테고리 색을 --cat 하나로 받아 쓴다. 쓰는 쪽은 어떤 카테고리인지 몰라도 된다. */
+[data-category="ADMIN"] {
+  --cat: var(--cat-admin);
+  --cat-soft: var(--cat-admin-soft);
+}
+[data-category="HOUSING"] {
+  --cat: var(--cat-housing);
+  --cat-soft: var(--cat-housing-soft);
+}
+[data-category="WASTE"] {
+  --cat: var(--cat-waste);
+  --cat-soft: var(--cat-waste-soft);
+}
+[data-category="LIFE"] {
+  --cat: var(--cat-life);
+  --cat-soft: var(--cat-life-soft);
 }
 
 * {
@@ -54,7 +112,7 @@ body {
   padding: 0;
   background: var(--bg);
   color: var(--text);
-  font-family: "Pretendard", "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  font-family: var(--font-sans), "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
   font-size: 18px;
   line-height: 1.65;
   /* 한글은 단어 단위로 끊어야 읽힌다. 다만 긴 URL · 주소가 들어오면 그대로 넘치므로 안전망을 둔다. */
@@ -69,7 +127,7 @@ body {
  * 키보드만 쓰는 사용자는 이 링이 없으면 자기가 어디 있는지 알 수 없다.
  */
 :focus-visible {
-  outline: var(--focus) solid var(--accent);
+  outline: var(--focus) solid var(--text);
   outline-offset: 2px;
 }
 
@@ -87,7 +145,7 @@ body {
 
 /*
  * 스크린리더만 읽는 텍스트. 화면에서는 안 보이지만 DOM 에는 있다.
- * 건너뛰기 링크(skip link)는 아직 안 넣었다. 본문 위에 반복되는 머리말 · 내비게이션이
+ * 건너뛰기 링크(skip link)는 아직 안 넣었다. 본문 위에 반복되는 내비게이션이
  * 없어서 건너뛸 대상이 없다. 상단 내비게이션이 생기면 그때 같이 넣는다.
  */
 .sr-only {
@@ -107,49 +165,383 @@ body {
 main {
   max-width: 640px;
   margin: 0 auto;
-  padding: 32px 20px 80px;
-}
-
-h1 {
-  font-size: 30px;
-  line-height: 1.35;
-  margin: 0 0 8px;
-  letter-spacing: -0.02em;
-}
-
-h2 {
-  font-size: 20px;
-  margin: 32px 0 12px;
-}
-
-.lead {
-  color: var(--text-soft);
-  margin: 0 0 32px;
+  padding: var(--space-5) 20px var(--space-7);
 }
 
 a {
+  color: inherit;
+}
+
+/* ---------- 머리말 ---------- */
+
+/*
+ * 제호 아래 굵은 선 하나가 이 화면의 기준선이다. 에디토리얼 레이아웃의 출발점이라
+ * 다른 요소의 선 굵기를 전부 여기에 맞춘다.
+ */
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 3px solid var(--rule);
+  margin-bottom: var(--space-5);
+}
+
+.masthead__brand {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.masthead__meta {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+/* ---------- 히어로 (가장 급한 할 일) ---------- */
+
+/*
+ * 이 제품의 본질은 기한이다. 그런데 기한이 15px 배지에 들어가 있으면 아무도 안 본다.
+ * 가장 급한 항목 하나를 끌어올려 숫자를 주인공으로 세운다.
+ */
+.hero {
+  display: block;
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background: var(--cat-soft, var(--accent-soft));
+  border-left: 8px solid var(--cat, var(--accent));
+  border-radius: 0 var(--radius) var(--radius) 0;
+  text-decoration: none;
+  transition: filter 150ms ease;
+}
+
+.hero:hover {
+  filter: brightness(0.97);
+}
+
+.hero.overdue {
+  background: var(--danger-soft);
+  border-left-color: var(--danger);
+}
+
+/*
+ * 같은 항목이 아래 묶음에도 다시 나오므로, 여기가 "요약 자리"라는 걸 말로 못박는다.
+ * 라벨이 없으면 그냥 중복으로 읽힌다.
+ */
+.hero__eyebrow {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
+}
+
+.hero__num {
+  display: block;
+  font-size: clamp(56px, 17vw, 84px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  /* 숫자 폭을 고정해서 D-9 → D-10 으로 바뀔 때 글자가 흔들리지 않게 한다. */
+  font-variant-numeric: tabular-nums;
+  color: var(--cat, var(--accent));
+}
+
+.hero.overdue .hero__num {
+  color: var(--danger);
+}
+
+.hero__cap {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hero__cta {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+/* ---------- 카테고리 묶음 ---------- */
+
+.group {
+  margin-bottom: var(--space-6);
+}
+
+.group__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: 2px solid var(--rule);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.group__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--cat);
+}
+
+.group__count {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+/* ---------- 할 일 한 줄 ---------- */
+
+/*
+ * 카드 상자를 걷어내고 색띠 + 가는 선으로 나눈다. 상자가 없으면 제목 크기와
+ * 색띠만 남아서 위계가 또렷해진다.
+ */
+.task-row {
+  display: block;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-2);
+  border-left: 5px solid var(--cat);
+  border-bottom: 1.5px solid var(--rule-soft);
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+
+.task-row:hover {
+  background: var(--cat-soft);
+}
+
+.task-row__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin-bottom: 2px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.task-row__cat {
+  color: var(--cat);
+}
+
+/* 기한은 오른쪽 끝에 세워서 세로로 읽히게 한다. 목록을 훑을 때 기한만 따라가게 된다. */
+.task-row__due {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+
+.task-row__due.overdue {
+  color: var(--danger);
+}
+
+.task-row__due.none {
+  font-weight: 500;
+}
+
+.task-row__title {
+  margin: 0 0 2px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.task-row__why {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-soft);
+}
+
+.task-row__stale {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+/* ---------- 상세 ---------- */
+
+/*
+ * 금액 · 기한 · 장소는 DB 원문을 그대로 박는다. 이 화면에 AI 가 쓴 문장은 없다.
+ * 구획을 h2 로 나눠 두는 이유는 스크린리더가 제목 단위로 건너뛸 수 있게 하려는 것이다.
+ */
+/* 상세는 하위 화면이라 제호를 다시 띄우지 않는다. 돌아가는 길만 분명히 둔다. */
+.back {
+  display: inline-block;
+  min-height: 44px;
+  margin-bottom: var(--space-3);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.detail-head {
+  padding-left: var(--space-3);
+  border-left: 8px solid var(--cat, var(--accent));
+  margin-bottom: var(--space-4);
+}
+
+.detail-head__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.detail-head__cat {
+  color: var(--cat, var(--accent));
+}
+
+.detail-head__due {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+
+.detail-head__due.overdue {
+  color: var(--danger);
+}
+
+.detail-head h1 {
+  margin: 4px 0 0;
+  font-size: clamp(28px, 8vw, 34px);
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+}
+
+.detail-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 2px solid var(--rule);
+}
+
+.detail-section h2 {
+  margin: 0 0 var(--space-1);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--text-soft);
+}
+
+/* 줄바꿈이 들어간 원문을 그대로 보여준다. 임의로 합치지 않는다. */
+.detail-body {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.place {
+  margin: 0;
+}
+
+.place div {
+  display: flex;
+  gap: var(--space-2);
+  padding: 4px 0;
+}
+
+.place dt {
+  flex: 0 0 56px;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.place dd {
+  margin: 0;
+}
+
+/* 전화는 링크로 둔다. 번호를 옮겨 적다가 틀리는 걸 막는다. */
+.tel {
+  font-weight: 700;
   color: var(--accent);
 }
 
-/* ---------- 폼 ---------- */
+/* 외부로 나가는 버튼. button 과 똑같이 보이되 a 태그다. */
+.button-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  margin-top: var(--space-1);
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: filter 150ms ease;
+}
+
+.button-link:hover {
+  filter: brightness(1.12);
+}
+
+.button-link:active {
+  filter: brightness(0.92);
+}
+
+/* 기한 지남 · 오래된 정보 같은 경고는 색 말고 테두리로도 알린다. */
+.warn {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.asof {
+  margin-top: var(--space-4);
+  font-size: 14px;
+  color: var(--text-soft);
+}
+
+/* ---------- 상황 입력 ---------- */
+
+.page-title {
+  margin: 0 0 var(--space-1);
+  font-size: clamp(30px, 9vw, 38px);
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+
+.lead {
+  margin: 0 0 var(--space-6);
+  color: var(--text-soft);
+}
 
 fieldset {
   border: none;
   padding: 0;
-  margin: 0 0 28px;
+  margin: 0 0 var(--space-5);
 }
 
 legend {
-  font-weight: 700;
-  font-size: 18px;
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: -0.02em;
   padding: 0;
-  margin-bottom: 10px;
+  margin-bottom: var(--space-2);
 }
 
 .choices {
   display: flex;
   flex-wrap: wrap;
-  gap: 8px;
+  gap: var(--space-1);
 }
 
 .choice {
@@ -185,19 +577,21 @@ legend {
 }
 
 .choice:has(input:focus-visible) {
-  outline: var(--focus) solid var(--accent);
+  outline: var(--focus) solid var(--text);
   outline-offset: 2px;
 }
 
 .field {
   display: block;
-  margin-bottom: 28px;
+  margin-bottom: var(--space-5);
 }
 
 .field > span {
   display: block;
-  font-weight: 700;
-  margin-bottom: 10px;
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
 }
 
 input[type="date"] {
@@ -236,198 +630,23 @@ button:active {
 .note {
   color: var(--text-soft);
   font-size: 15px;
-  margin-top: 14px;
+  margin-top: var(--space-2);
 }
 
-/* ---------- 할 일 카드 ---------- */
-
-.card {
-  display: block;
-  background: var(--surface);
-  border: 1.5px solid var(--border);
-  border-radius: var(--radius);
-  padding: 20px;
-  margin-bottom: 14px;
-  color: inherit;
-  text-decoration: none;
-  transition: border-color 150ms ease, background 150ms ease;
-}
-
-a.card:hover {
-  border-color: var(--accent);
-}
-
-a.card:active {
-  background: var(--accent-soft);
-}
-
-.card.overdue {
-  border-color: var(--danger);
-  border-width: 3px;
-  padding: 18.5px;
-}
-
-/* 기한 지난 카드는 올려놔도 빨간 테두리를 유지한다. 경고가 hover 로 가려지면 안 된다. */
-a.card.overdue:hover {
-  border-color: var(--danger);
-  background: var(--danger-soft);
-}
-
-a.card.overdue:active {
-  background: var(--danger-soft);
-}
-
-.card h3 {
-  margin: 0 0 6px;
-  font-size: 21px;
-}
-
-.card-meta {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-  margin-bottom: 10px;
-}
-
-.badge {
-  display: inline-block;
-  font-size: 15px;
-  font-weight: 700;
-  padding: 3px 10px;
-  border-radius: 999px;
-  background: var(--accent-soft);
-  color: var(--accent);
-}
-
-.badge.overdue {
-  background: var(--danger-soft);
-  color: var(--danger);
-}
-
-.badge.none,
-.badge.category {
-  background: var(--bg);
-  border: 1.5px solid var(--border-control);
-  color: var(--text-soft);
-}
-
-.why {
-  margin: 0;
-  color: var(--text-soft);
-}
-
-.asof {
-  margin: 12px 0 0;
-  font-size: 14px;
-  color: var(--text-soft);
-}
-
-.summary {
-  background: var(--accent-soft);
-  border-radius: var(--radius);
-  padding: 14px 18px;
-  margin-bottom: 20px;
-  font-weight: 700;
-}
+/* ---------- 상태 ---------- */
 
 .empty {
+  padding: var(--space-4) 0;
   color: var(--text-soft);
 }
 
 .nav {
-  margin-top: 32px;
+  margin-top: var(--space-6);
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--rule);
   display: flex;
   flex-wrap: wrap;
-  gap: 18px;
-}
-
-/* ---------- 할 일 상세 ---------- */
-
-/*
- * 금액 · 기한 · 장소는 DB 원문을 그대로 박는다. 이 화면에 AI 가 쓴 문장은 없다.
- * 구획을 h2 로 나눠 두는 이유는 스크린리더가 제목 단위로 건너뛸 수 있게 하려는 것이다.
- */
-.detail-section {
-  margin: 28px 0 0;
-  padding-top: 24px;
-  border-top: 1.5px solid var(--border);
-}
-
-.detail-section h2 {
-  margin: 0 0 10px;
-}
-
-/* 줄바꿈이 들어간 원문을 그대로 보여준다. 임의로 합치지 않는다. */
-.detail-body {
-  margin: 0;
-  white-space: pre-line;
-}
-
-.place {
-  margin: 0;
-}
-
-.place div {
-  display: flex;
-  gap: 10px;
-  padding: 6px 0;
-}
-
-.place dt {
-  flex: 0 0 72px;
-  font-weight: 700;
-  color: var(--text-soft);
-}
-
-.place dd {
-  margin: 0;
-}
-
-/* 전화는 링크로 둔다. 번호를 옮겨 적다가 틀리는 걸 막는다. */
-.tel {
-  font-weight: 700;
-}
-
-/* 외부로 나가는 버튼. button 과 똑같이 보이되 a 태그다. */
-.button-link {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 56px;
-  margin-top: 8px;
-  font-weight: 700;
-  color: var(--on-accent);
-  background: var(--accent);
-  border-radius: var(--radius);
-  text-decoration: none;
-  transition: filter 150ms ease;
-}
-
-.button-link:hover {
-  filter: brightness(1.12);
-}
-
-.button-link:active {
-  filter: brightness(0.92);
-}
-
-.detail-section + .asof {
-  margin-top: 26px;
-}
-
-.back {
-  display: inline-block;
-  margin-bottom: 20px;
-  font-weight: 700;
-}
-
-/* 기한 지남 · 오래된 정보 같은 경고는 색 말고 테두리로도 알린다. */
-.warn {
-  margin: 20px 0 0;
-  padding: 14px 18px;
-  border: 1.5px solid var(--danger);
-  border-radius: var(--radius);
-  background: var(--danger-soft);
-  color: var(--danger);
+  gap: var(--space-4);
+  font-size: 16px;
   font-weight: 700;
 }
