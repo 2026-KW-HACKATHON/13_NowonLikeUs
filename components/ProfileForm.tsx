@@ -18,8 +18,9 @@ const CONTRACT: { value: ContractType; label: string }[] = [
   { value: 'OWNED', label: '자가' },
 ];
 
-// 조사 결과 구역별로 쓰레기 배출 요일이 갈리지 않으면 이 선택은 없앤다.
-const ZONES = ['월계1동'];
+// 조사 결과 월계1동 내부 세부 구역 구분은 공식 자료에서 확인되지 않았다.
+// 구역별로 갈리는 규정이 나오면 그때 선택 UI 를 만든다.
+const ZONE = '월계1동';
 
 export default function ProfileForm({
   initial,
@@ -28,7 +29,6 @@ export default function ProfileForm({
   initial?: Profile | null;
   onSubmit: (profile: Profile) => void;
 }) {
-  const [zone, setZone] = useState(initial?.zone ?? ZONES[0]);
   const [housingType, setHousingType] = useState<HousingType>(initial?.housingType ?? 'ONE_ROOM');
   const [contractType, setContractType] = useState<ContractType>(initial?.contractType ?? 'MONTHLY');
   const [moveInDate, setMoveInDate] = useState(initial?.moveInDate ?? '');
@@ -39,7 +39,7 @@ export default function ProfileForm({
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     if (!moveInDate) return;
-    onSubmit({ zone, housingType, contractType, moveInDate, hasCar, hasPet, isStudent });
+    onSubmit({ zone: ZONE, housingType, contractType, moveInDate, hasCar, hasPet, isStudent });
   }
 
   return (
