@@ -1,8 +1,49 @@
 import { describe, expect, it } from 'vitest';
 
-import { verifyGrounding } from '@/lib/grounding';
+import { groundAnswer, verifyGrounding } from '@/lib/grounding';
 
 const known = new Set(['task:a', 'task:b']);
+
+describe('groundAnswer', () => {
+  it.each([
+    { sourceIds: ['task:a'], confidence: 'UNKNOWN' as const },
+    { sourceIds: ['task:fake'], confidence: 'GROUNDED' as const },
+    { sourceIds: [], confidence: 'GROUNDED' as const },
+    { sourceIds: ['task:fake'], confidence: 'PARTIAL' as const },
+  ])('최종 UNKNOWN이면 원문 답변을 차단한다: %j', (ai) => {
+    const result = groundAnswer({ ...ai, answer: '근거 없는 안내입니다.' }, known);
+
+    expect(result.confidence).toBe('UNKNOWN');
+    expect(result.answer).toBeNull();
+    expect(result.validSourceIds).toEqual([]);
+  });
+
+  it('검증된 GROUNDED 답변은 유지한다', () => {
+    expect(groundAnswer({
+      answer: '관련 항목을 확인해 주세요.',
+      sourceIds: ['task:a'],
+      confidence: 'GROUNDED',
+    }, known)).toEqual({
+      answer: '관련 항목을 확인해 주세요.',
+      confidence: 'GROUNDED',
+      validSourceIds: ['task:a'],
+      droppedSourceIds: [],
+    });
+  });
+
+  it('PARTIAL로 강등되면 답변과 실제 근거만 유지한다', () => {
+    expect(groundAnswer({
+      answer: '관련 항목을 확인해 주세요.',
+      sourceIds: ['task:a', 'task:fake'],
+      confidence: 'GROUNDED',
+    }, known)).toEqual({
+      answer: '관련 항목을 확인해 주세요.',
+      confidence: 'PARTIAL',
+      validSourceIds: ['task:a'],
+      droppedSourceIds: ['task:fake'],
+    });
+  });
+});
 
 describe('verifyGrounding', () => {
   it('근거가 전부 실재하면 AI 신뢰도를 그대로 쓴다', () => {
