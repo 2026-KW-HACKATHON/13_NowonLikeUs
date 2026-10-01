@@ -12,14 +12,18 @@ import type { MatchedTask } from '@/lib/types';
  * `data-category` 가 왼쪽 색띠의 색을 정한다 — 색 옆에 카테고리 이름이 항상 같이 붙으므로
  * 색각 이상이 있어도 구분된다.
  */
-export default function TaskCard({ task }: { task: MatchedTask }) {
+export default function TaskCard({ task, done = false }: { task: MatchedTask; done?: boolean }) {
   const due = dueLabel(task);
 
   return (
-    <Link href={`/tasks/${task.id}`} className="task-row" data-category={task.category}>
+    <Link href={`/tasks/${task.id}`} className={`task-row${done ? ' done' : ''}`} data-category={task.category}>
       <div className="task-row__top">
         <span className="task-row__cat">{CATEGORY_LABEL[task.category]}</span>
-        <span className={`task-row__due ${due.tone}`}>{due.text}</span>
+        {done ? (
+          <span className="task-row__due">✓ 완료</span>
+        ) : (
+          <span className={`task-row__due ${due.tone}`}>{due.text}</span>
+        )}
       </div>
       <h3 className="task-row__title">{task.title}</h3>
       <p className="task-row__why">{task.why}</p>

@@ -650,3 +650,68 @@ button:active {
   font-size: 16px;
   font-weight: 700;
 }
+
+/* ---------- 진행률 · 완료 ---------- */
+
+.progress {
+  margin-bottom: var(--space-5);
+}
+
+.progress__text {
+  margin: 0 0 var(--space-1);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+.progress__text strong {
+  font-weight: 900;
+  color: var(--text);
+}
+
+/* 바 테두리는 UI 경계라 3:1 이상이어야 한다(WCAG 1.4.11). 숫자도 글로 같이 적어 둔다. */
+.progress__bar {
+  height: 14px;
+  border: 1.5px solid var(--border-control);
+  border-radius: 999px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.progress__fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 300ms ease;
+}
+
+.all-done {
+  margin: 0 0 var(--space-6);
+  padding: var(--space-3);
+  border-left: 8px solid var(--accent);
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+
+/*
+ * 끝낸 일은 흐리게 하지 않는다. 흐리게 하면 대비가 7:1 아래로 떨어진다.
+ * 대신 제목에 취소선을 긋고 오른쪽에 "✓ 완료" 글자를 둔다.
+ */
+.task-row.done .task-row__title {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.group--done .group__head {
+  color: var(--text-soft);
+}
+
+.done-toggle {
+  background: var(--surface);
+  color: var(--text);
+  border: 3px solid var(--accent);
+}
+
+.done-toggle.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
