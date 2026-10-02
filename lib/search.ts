@@ -19,7 +19,6 @@ export function keywordSearch<
     .map((word) => word.replace(/^\p{P}+|\p{P}+$/gu, ''))
     .filter(Boolean))].map((word) => ({
     word,
-    // ponytail: 흔한 조사 한 개만 처리한다. 복합 조사·활용형은 실제 누락 사례가 쌓이면 확장한다.
     stem: word.replace(/^([가-힣]{2,}?)(으로|에서|에게|한테|부터|까지|처럼|보다|은|는|이|가|을|를|에|로|와|과|도|만)$/u, '$1'),
   }));
 
