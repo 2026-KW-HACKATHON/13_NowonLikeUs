@@ -9,6 +9,31 @@ const items = [
 ];
 
 describe('keywordSearch', () => {
+  it.each(['전입신고는 언제 하나요', '전입신고를 어떻게 하나요?', '전입신고는?', '"전입신고"', '전입신고에서', '전입신고까지'])('조사와 문장부호가 붙어도 검색한다: %s', (query) => {
+    expect(keywordSearch(items, query).map((item) => item.id)).toEqual(['1']);
+  });
+
+  it('긴 조사를 먼저 처리한다', () => {
+    expect(keywordSearch(items, '보증금으로').map((item) => item.id)).toEqual(['2']);
+  });
+
+  it('조사 변형을 반복해도 같은 키워드의 점수를 중복 계산하지 않는다', () => {
+    expect(keywordSearch(items, '보증금 보증금을 보증금은 과태료').map((item) => item.id)).toEqual(['1', '2', '3']);
+  });
+
+  it('조사처럼 끝나는 원래 단어의 일치는 유지한다', () => {
+    const data = [{ title: '어린이', why: '', howTo: '' }];
+    expect(keywordSearch(data, '어린이')).toEqual(data);
+  });
+
+  it('조사를 제거해 한 글자 검색으로 확대하지 않는다', () => {
+    expect(keywordSearch([{ title: '지하철', why: '', howTo: '' }], '지도')).toEqual([]);
+  });
+
+  it('문장부호만 있으면 빈 배열이다', () => {
+    expect(keywordSearch(items, '?! ...')).toEqual([]);
+  });
+
   it('제목에 포함된 말로 찾는다', () => {
     expect(keywordSearch(items, '전입신고').map((item) => item.id)).toEqual(['1']);
   });
