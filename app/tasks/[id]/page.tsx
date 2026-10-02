@@ -5,6 +5,8 @@ import { useParams } from 'next/navigation';
 import Link from 'next/link';
 import { CATEGORY_LABEL, asOfLabel, dueLabel } from '@/lib/labels';
 import { loadProfile } from '@/lib/profile';
+import { isDone, toggleDone } from '@/lib/progress';
+import { useDone } from '@/lib/useDone';
 import type { MatchedTask, TaskDetailResponse } from '@/lib/types';
 
 type State =
@@ -27,6 +29,9 @@ function telHref(phone: string): string {
 export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [state, setState] = useState<State>({ kind: 'loading' });
+  const doneIds = useDone();
+  // 저장이 막힌 환경에서는 눌러도 안 바뀐다. 말없이 넘어가면 고장난 줄 안다.
+  const [saveFailed, setSaveFailed] = useState(false);
 
   useEffect(() => {
     if (!id) return;
@@ -92,6 +97,7 @@ export default function TaskDetailPage() {
 
   const { task } = state;
   const due = dueLabel(task);
+  const done = isDone(task.id, doneIds);
 
   return (
     <main>
@@ -161,6 +167,22 @@ export default function TaskDetailPage() {
           </a>
         </section>
       )}
+
+      <section className="detail-section">
+        <button
+          type="button"
+          className={`done-toggle${done ? ' on' : ''}`}
+          aria-pressed={done}
+          onClick={() => setSaveFailed(!toggleDone(task.id))}
+        >
+          {done ? '✓ 완료함 (누르면 취소)' : '완료했어요'}
+        </button>
+        {saveFailed && (
+          <p className="warn" role="alert">
+            이 브라우저에서는 저장할 수 없습니다. 시크릿 창이거나 사이트 데이터가 차단된 상태일 수 있습니다.
+          </p>
+        )}
+      </section>
 
       <p className="asof">{asOfLabel(task.verifiedAt)} · 출처를 확인한 날짜입니다</p>
     </main>

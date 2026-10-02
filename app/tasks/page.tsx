@@ -5,6 +5,8 @@ import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import TaskCard from '@/components/TaskCard';
 import { useProfile } from '@/lib/useProfile';
+import { useDone } from '@/lib/useDone';
+import { progressPercent, splitByDone } from '@/lib/progress';
 import {
   CATEGORY_LABEL,
   CONTRACT_LABEL,
@@ -38,6 +40,7 @@ function Masthead({ profile }: { profile: Profile | null }) {
 export default function TasksPage() {
   const router = useRouter();
   const { hydrated, profile } = useProfile();
+  const doneIds = useDone();
   const [state, setState] = useState<State>({ kind: 'loading' });
 
   useEffect(() => {
@@ -93,13 +96,34 @@ export default function TasksPage() {
   }
 
   const { tasks } = state;
-  const urgent = pickUrgent(tasks);
+  // 끝낸 일은 히어로와 묶음에서 뺀다. 이미 한 일이 "지금 가장 급한 일"로 뜨면 안 된다.
+  const { todo, done } = splitByDone(tasks, doneIds);
+  const urgent = pickUrgent(todo);
   const hero = urgent ? heroLabel(urgent) : null;
-  const groups = groupByCategory(tasks);
+  const groups = groupByCategory(todo);
+  const percent = progressPercent(done.length, tasks.length);
 
   return (
     <main>
       <Masthead profile={profile} />
+
+      {tasks.length > 0 && (
+        <div className="progress">
+          <p className="progress__text">
+            {tasks.length}건 중 <strong>{done.length}건</strong> 완료
+          </p>
+          <div
+            className="progress__bar"
+            role="progressbar"
+            aria-label="할 일 진행률"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={percent}
+          >
+            <div className="progress__fill" style={{ width: `${percent}%` }} />
+          </div>
+        </div>
+      )}
 
       {/*
         가장 급한 항목 하나를 끌어올린다. 아래 묶음에도 같은 항목이 다시 나오지만
@@ -118,21 +142,35 @@ export default function TasksPage() {
         </Link>
       )}
 
-      {tasks.length === 0 ? (
-        <p className="empty">해당하는 할 일이 없습니다.</p>
-      ) : (
-        groups.map((group) => (
-          <section key={group.category} className="group" data-category={group.category}>
-            <h2 className="group__head">
-              <span className="group__dot" aria-hidden="true" />
-              {CATEGORY_LABEL[group.category]}
-              <span className="group__count">{group.tasks.length}건</span>
-            </h2>
-            {group.tasks.map((task) => (
-              <TaskCard key={task.id} task={task} />
-            ))}
-          </section>
-        ))
+      {tasks.length === 0 && <p className="empty">해당하는 할 일이 없습니다.</p>}
+
+      {tasks.length > 0 && todo.length === 0 && (
+        <p className="all-done">해당하는 할 일을 모두 끝냈습니다.</p>
+      )}
+
+      {groups.map((group) => (
+        <section key={group.category} className="group" data-category={group.category}>
+          <h2 className="group__head">
+            <span className="group__dot" aria-hidden="true" />
+            {CATEGORY_LABEL[group.category]}
+            <span className="group__count">{group.tasks.length}건</span>
+          </h2>
+          {group.tasks.map((task) => (
+            <TaskCard key={task.id} task={task} />
+          ))}
+        </section>
+      ))}
+
+      {done.length > 0 && (
+        <section className="group group--done">
+          <h2 className="group__head">
+            끝낸 일
+            <span className="group__count">{done.length}건</span>
+          </h2>
+          {done.map((task) => (
+            <TaskCard key={task.id} task={task} done />
+          ))}
+        </section>
       )}
 
       <nav className="nav">
