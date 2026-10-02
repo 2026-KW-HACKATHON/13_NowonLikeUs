@@ -46,6 +46,11 @@ jobs:
       - name: 린트
         run: npm run lint
 
+      # `LayoutProps` 같은 전역 타입은 Next 가 빌드할 때 만들어 준다. tsc 가 빌드보다
+      # 먼저 돌면 깨끗한 환경에서는 그 타입이 없어 실패하므로, 빌드 없이 타입만 먼저 생성한다.
+      - name: Next 라우트 타입 생성
+        run: npx next typegen
+
       - name: 타입 검사
         run: npx tsc --noEmit
 
