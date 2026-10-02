@@ -2,18 +2,23 @@
 
 import { useEffect } from 'react';
 import { useRouter } from 'next/navigation';
-import { loadProfile } from '@/lib/profile';
+import { useProfile } from '@/lib/useProfile';
 
 export default function Home() {
   const router = useRouter();
+  const { hydrated, profile } = useProfile();
 
   useEffect(() => {
-    router.replace(loadProfile() ? '/tasks' : '/setup');
-  }, [router]);
+    // 하이드레이션 전에는 프로필 유무를 모른다. 알고 나서 보낸다.
+    if (!hydrated) return;
+    router.replace(profile ? '/tasks' : '/setup');
+  }, [hydrated, profile, router]);
 
   return (
     <main>
-      <p className="lead">불러오는 중입니다…</p>
+      <p className="empty" role="status">
+        불러오는 중입니다…
+      </p>
     </main>
   );
 }
