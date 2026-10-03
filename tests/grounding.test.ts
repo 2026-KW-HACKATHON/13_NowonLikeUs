@@ -5,6 +5,15 @@ import { groundAnswer, verifyGrounding } from '@/lib/grounding';
 const known = new Set(['task:a', 'task:b']);
 
 describe('groundAnswer', () => {
+  it.each(['14일 이내입니다.', '５만원입니다.', '①번입니다.', '١٤일입니다.', '십사 일 이내입니다.', '오만원입니다.', '두 달입니다.', '이틀 안입니다.'])('근거가 있어도 수치가 든 답변은 차단한다: %s', (answer) => {
+    expect(groundAnswer({ answer, sourceIds: ['task:a'], confidence: 'GROUNDED' }, known))
+      .toMatchObject({ answer: null, confidence: 'UNKNOWN', validSourceIds: [] });
+  });
+
+  it('일반 안내의 단어를 한글 숫자로 오인하지 않는다', () => {
+    const answer = '전입신고와 계약서 확인이 필요합니다. 해당 항목을 확인해 주세요.';
+    expect(groundAnswer({ answer, sourceIds: ['task:a'], confidence: 'GROUNDED' }, known).answer).toBe(answer);
+  });
   it.each([
     { sourceIds: ['task:a'], confidence: 'UNKNOWN' as const },
     { sourceIds: ['task:fake'], confidence: 'GROUNDED' as const },

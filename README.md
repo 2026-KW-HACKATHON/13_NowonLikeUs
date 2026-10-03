@@ -107,6 +107,9 @@ npm run dev
 | `DATABASE_URL` | Neon Postgres 연결 문자열 |
 | `GEMINI_API_KEY` | Google AI Studio API 키. **비워둬도 앱은 동작합니다** — 키워드 검색으로 폴백합니다 |
 | `GEMINI_MODEL` | 기본값 `gemini-3.1-flash-lite` |
+| `GEMINI_ALLOW_USER_INPUT` | 기본 `false`. `/api/ask`는 Google 전송 없이 키워드 검색. 유료 프로젝트·고지 정책 확인 후에만 `true` |
+
+질문 API의 데이터 처리·외부 전송 활성화 조건은 [질문 API 안내](docs/ask-api.md)를 참고하세요.
 
 AI는 증강이지 필수 경로가 아닙니다. 할 일 목록·상황 매칭·질문 등록은 전부 AI 없이 동작합니다.
 

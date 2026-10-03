@@ -25,6 +25,11 @@ afterEach(() => {
 });
 
 describe('askGemini', () => {
+  it.each(['14일 안입니다.', '５만원입니다.', '십사 일 안입니다.'])('수치가 든 AI 문장은 폴백하도록 null이다: %s', async (text) => {
+    fetchMock.mockResolvedValueOnce(response({ ...answer, answer: text }));
+    expect(await call()).toBeNull();
+  });
+
   it('구조화된 요청을 보내고 올바른 응답을 반환한다', async () => {
     fetchMock.mockResolvedValueOnce(response());
     expect(await call()).toEqual(answer);
