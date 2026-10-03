@@ -15,16 +15,21 @@ export function keywordSearch<
     return [];
   }
 
-  const keywords = [...new Set(normalizedQuery.split(/\s+/))];
+  const keywords = [...new Set(normalizedQuery.split(/\s+/)
+    .map((word) => word.replace(/^\p{P}+|\p{P}+$/gu, ''))
+    .filter(Boolean))].map((word) => ({
+    word,
+    stem: word.replace(/^([가-힣]{2,}?)(으로|에서|에게|한테|부터|까지|처럼|보다|은|는|이|가|을|를|에|로|와|과|도|만)$/u, '$1'),
+  }));
 
   return items
     .map((item) => {
       const fields = [item.title, item.why, item.howTo].map((field) =>
         field.toLowerCase(),
       );
-      const score = keywords.filter((keyword) =>
-        fields.some((field) => field.includes(keyword)),
-      ).length;
+      const score = new Set(keywords.filter(({ word, stem }) =>
+        fields.some((field) => field.includes(word) || field.includes(stem)),
+      ).map(({ stem }) => stem)).size;
 
       return { item, score };
     })
