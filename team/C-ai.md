@@ -148,7 +148,7 @@ describe('keywordSearch', () => {
 
 **파일:** `lib/gemini.ts`
 
-SDK 없이 **REST로 직접 호출**합니다. 환경 변수는 `GEMINI_API_KEY`, `GEMINI_MODEL`(기본 `gemini-2.5-flash`)입니다.
+SDK 없이 **REST로 직접 호출**합니다. 환경 변수는 `GEMINI_API_KEY`, `GEMINI_MODEL`(기본 `gemini-3.1-flash-lite`)입니다.
 
 ```
 POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent
