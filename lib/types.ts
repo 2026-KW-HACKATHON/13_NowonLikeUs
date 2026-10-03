@@ -21,8 +21,8 @@ export type Confidence = 'GROUNDED' | 'PARTIAL' | 'UNKNOWN';
  * 상세 주소(번지 · 건물명 · 호수)는 수집하지 않는다. 필드 자체를 두지 않아
  * 실수로 들어갈 수 없게 한다. 쓰레기 배출 요일이 갈리는 구역 단위면 충분하다.
  *
- * 로그인이 없으므로 이 값은 브라우저 localStorage 에만 저장되고,
- * 할 일을 조회할 때 API 로 실어 보낸다.
+ * 전체 프로필은 브라우저 localStorage 에 저장되고 할 일을 조회할 때 API 로 보낸다.
+ * 질문 제출 시에는 주거형태·계약형태만 질문과 함께 DB에 저장한다.
  */
 export interface Profile {
   /** 월계1동 내 구역. 조사 결과 구역별로 갈리지 않으면 선택 자체를 없앤다. */
@@ -107,7 +107,8 @@ export interface AskRequest {
 /**
  * POST /api/ask 응답.
  *
- * `mode` 가 'FALLBACK' 이면 Gemini 호출이 실패해 키워드 검색으로 답한 것이다.
+ * `mode` 가 'FALLBACK' 이면 외부 전송 비활성화, 호출 실패 또는 수치 응답 차단으로
+ * 키워드 검색을 사용한 것이다.
  * 이때 `answer` 는 null 이고 `tasks` 에 관련 항목만 담긴다. 앱은 멈추지 않는다.
  *
  * `confidence` 가 'UNKNOWN' 이면 `answer` 는 null 이다.
