@@ -1,4 +1,4 @@
-import type { Confidence } from '@/lib/types';
+import type { Confidence } from "@/lib/types";
 
 export interface GroundingResult {
   confidence: Confidence;
@@ -6,18 +6,24 @@ export interface GroundingResult {
   droppedSourceIds: string[];
 }
 
-export type GroundedAnswer = Omit<GroundingResult, 'confidence'> & (
-  | { confidence: 'UNKNOWN'; answer: null }
-  | { confidence: Exclude<Confidence, 'UNKNOWN'>; answer: string }
-);
+export type GroundedAnswer = Omit<GroundingResult, "confidence"> &
+  (
+    | { confidence: "UNKNOWN"; answer: null }
+    | { confidence: Exclude<Confidence, "UNKNOWN">; answer: string }
+  );
 
 /** 수치가 든 AI 문장은 폐기한다. DB 원문 카드에는 적용하지 않는다. */
 export function hasNumericContent(answer: string): boolean {
-  const text = answer.normalize('NFKC').replace(/\p{Cf}/gu, '');
-  // ponytail: 한글 수량 표현은 보수적인 패턴 검사다. 모든 자연어 수치를 판별하지는 못한다.
-  return /\p{N}/u.test(text)
-    || /(?:^|[^가-힣])(?:[영공일이삼사오육칠팔구십백천만억조]+|한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스무)\s*(?:개월|시간|퍼센트|만원|원|년|월|일|주|달|시|분|초|번|개|명|층|호|평|미터)/u.test(text)
-    || /(?:^|[^가-힣])(?:하루|이틀|사흘|나흘|닷새|엿새|이레|여드레|아흐레|열흘)/u.test(text);
+  const text = answer.normalize("NFKC").replace(/\p{Cf}/gu, "");
+  return (
+    /\p{N}/u.test(text) ||
+    /(?:^|[^가-힣])(?:[영공일이삼사오육칠팔구십백천만억조]+|한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스무)\s*(?:개월|시간|퍼센트|만원|원|년|월|일|주|달|시|분|초|번|개|명|층|호|평|미터)/u.test(
+      text,
+    ) ||
+    /(?:^|[^가-힣])(?:하루|이틀|사흘|나흘|닷새|엿새|이레|여드레|아흐레|열흘)/u.test(
+      text,
+    )
+  );
 }
 
 /**
@@ -31,8 +37,13 @@ export function groundAnswer(
 ): GroundedAnswer {
   const result = verifyGrounding(ai.sourceIds, known, ai.confidence);
 
-  if (result.confidence === 'UNKNOWN' || hasNumericContent(ai.answer)) {
-    return { ...result, confidence: 'UNKNOWN', answer: null, validSourceIds: [] };
+  if (result.confidence === "UNKNOWN" || hasNumericContent(ai.answer)) {
+    return {
+      ...result,
+      confidence: "UNKNOWN",
+      answer: null,
+      validSourceIds: [],
+    };
   }
 
   return { ...result, confidence: result.confidence, answer: ai.answer };
@@ -51,9 +62,9 @@ export function verifyGrounding(
   const validSourceIds = uniqueSourceIds.filter((id) => known.has(id));
   const droppedSourceIds = uniqueSourceIds.filter((id) => !known.has(id));
 
-  if (aiConfidence === 'UNKNOWN') {
+  if (aiConfidence === "UNKNOWN") {
     return {
-      confidence: 'UNKNOWN',
+      confidence: "UNKNOWN",
       validSourceIds: [],
       droppedSourceIds,
     };
@@ -61,22 +72,22 @@ export function verifyGrounding(
 
   if (validSourceIds.length === 0) {
     return {
-      confidence: 'UNKNOWN',
+      confidence: "UNKNOWN",
       validSourceIds: [],
       droppedSourceIds,
     };
   }
 
-  if (aiConfidence === 'PARTIAL' || droppedSourceIds.length > 0) {
+  if (aiConfidence === "PARTIAL" || droppedSourceIds.length > 0) {
     return {
-      confidence: 'PARTIAL',
+      confidence: "PARTIAL",
       validSourceIds,
       droppedSourceIds,
     };
   }
 
   return {
-    confidence: 'GROUNDED',
+    confidence: "GROUNDED",
     validSourceIds,
     droppedSourceIds,
   };
