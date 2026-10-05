@@ -36,15 +36,16 @@ export async function POST(request: Request) {
   const text = body.text.trim();
   try {
     const rows = await prisma.task.findMany({ where: { isPublished: true } });
+    const candidates = keywordSearch(rows, text);
     // 키가 있어도 기본값은 전송 금지. 유료 프로젝트·고지 정책 확인 후에만 서버에서 활성화한다.
-    const ai = process.env.GEMINI_ALLOW_USER_INPUT === 'true' && rows.length > 0
-      ? await askGemini(text, rows.map((t) => `task:${t.id} | ${t.title} | ${t.why} | ${t.howTo}`).join('\n'),
+    const ai = process.env.GEMINI_ALLOW_USER_INPUT === 'true' && candidates.length > 0
+      ? await askGemini(text, candidates.map((t) => `task:${t.id} | ${t.title} | ${t.why} | ${t.howTo}`).join('\n'),
         profile ? `주거형태: ${HOUSING_LABEL[profile.housingType]}, 계약형태: ${CONTRACT_LABEL[profile.contractType]}` : '')
       : null;
-    const grounded = ai ? groundAnswer(ai, new Set(rows.map((t) => `task:${t.id}`))) : null;
+    const grounded = ai ? groundAnswer(ai, new Set(candidates.map((t) => `task:${t.id}`))) : null;
     const selected = grounded
-      ? rows.filter((t) => grounded.validSourceIds.includes(`task:${t.id}`))
-      : keywordSearch(rows, text);
+      ? candidates.filter((t) => grounded.validSourceIds.includes(`task:${t.id}`))
+      : candidates;
     const answer = grounded?.answer ?? null;
     const confidence = grounded?.confidence ?? 'UNKNOWN';
     const question = await prisma.question.create({
