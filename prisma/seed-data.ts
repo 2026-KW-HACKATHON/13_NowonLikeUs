@@ -6,12 +6,13 @@ export type SeedTask = Omit<Prisma.TaskCreateInput, 'id' | 'createdAt' | 'update
  * 확인된 항목만 넣는다. 확인되지 않은 값은 추정으로 채우지 않는다.
  * 새 항목을 추가할 때는 sourceNote에 출처와 확인 경로를, verifiedAt에 확인 날짜를 반드시 적는다.
  *
- * 2026-09-26 추가분은 docs/월계1동_생활정보.md(박용민 조사)의 "확인 완료" 항목만 옮겼다.
- * 음식물쓰레기 요일, 종량제봉투 판매점, 빛솔재 전입신고 방식, 동물등록 대행기관은 미확인이라 넣지 않았다.
+ * 2026-09-26·10-02 추가분은 docs/월계1동_생활정보.md(박용민 조사)의 "확인 완료" 항목만 옮겼다.
+ * 오피스텔 전용 배출 규칙은 공식 자료로 확인되지 않아 넣지 않았다(건물마다 관리 방식이 다름).
  */
 
 const CHECKED_0924 = new Date('2026-09-24T00:00:00Z');
 const CHECKED_0926 = new Date('2026-09-26T00:00:00Z');
+const CHECKED_1002 = new Date('2026-10-02T00:00:00Z');
 
 /** 월계1동 주민센터 — 공식 홈페이지에서 확인 (2026-09-26) */
 const CENTER = {
@@ -144,6 +145,46 @@ export const seedTasks: SeedTask[] = [
     verifiedAt: CHECKED_0926,
   },
 
+  {
+    title: '음식물쓰레기 버리는 방법 알아두기',
+    dueOffsetDays: null,
+    why: '전용 수거용기에 납부필증을 붙이지 않거나 금지된 날에 내놓으면 수거되지 않습니다.',
+    howTo:
+      '일요일~금요일 저녁 6시 이후, 3L·6L 음식물 전용 수거용기에 담아 내 집 앞에 내놓습니다. ' +
+      '공휴일과 공휴일 전날에는 내놓지 않습니다. 버릴 때마다 납부필증(1L당 100원)을 용기 손잡이에 붙입니다. ' +
+      '3L 용기는 전입 시 주민센터에서 받을 수 있습니다(재고가 없으면 지급되지 않을 수 있음). ' +
+      '차가 들어오기 어려운 턱·경사 위라면 차가 닿는 아래쪽에 내놓습니다.',
+    linkUrl: null,
+    placeName: '한국진개 (월계1동 수거업체)',
+    placeAddress: null,
+    placePhone: '02-994-3440',
+    category: 'WASTE',
+    housingTypes: ['ONE_ROOM', 'VILLA'],
+    contractTypes: [],
+    sourceNote:
+      '2026-10-02 노원구청 자원순환과 전화 확인(주 6일 배출, 토요일 야간 배출 금지, 접근 곤란 구역 배출 위치) / ' +
+      '노원구청 「생활폐기물배출안내 및 종량제배출방법」(토요일·공휴일 전일 배출금지) / ' +
+      '노원구청 「음식물류폐기물 배출안내」(전용 수거용기, 저녁 6시 이후 문전배출, 납부필증 1L당 100원, 공휴일 미수거)',
+    verifiedAt: CHECKED_1002,
+  },
+  {
+    title: '종량제봉투 파는 곳 알아두기',
+    dueOffsetDays: null,
+    why: '생활쓰레기는 종량제봉투에 담아야만 가져갑니다. 봉투는 지정된 판매소에서만 살 수 있습니다.',
+    howTo:
+      '월계1동 근처 판매소: 이마트24 광운대역점(석계로 98-1, 02-6010-1032), ' +
+      'GS25 월계성북역점(석계로 103, 02-913-6459), 농민마트(광운로 61, 02-941-7778), ' +
+      '가락홈마트(광운로 46 대동아파트 상가동, 02-909-3111). 판매소는 바뀔 수 있으니 가기 전에 전화로 확인하세요.',
+    linkUrl: 'https://news.seoul.go.kr/env/location-sales',
+    category: 'WASTE',
+    housingTypes: ['ONE_ROOM', 'OFFICETEL', 'VILLA', 'APARTMENT'],
+    contractTypes: [],
+    sourceNote:
+      '서울시 종량제물품 판매소 위치안내 → 노원구 공식 판매소 조회에서 판매 이력·전화번호 확인, ' +
+      '주소는 별도 위치자료로 교차확인',
+    verifiedAt: CHECKED_1002,
+  },
+
   // ───────── 쓰레기 (아파트) ─────────
   {
     title: '우리 단지 분리배출 요일 확인하기',
@@ -216,9 +257,28 @@ export const seedTasks: SeedTask[] = [
     category: 'WASTE',
     housingTypes: ['DORM'],
     contractTypes: [],
-    studentOnly: true,
     sourceNote: '광운대학교 행복기숙사 빛솔재 공식 FAQ: 쓰레기 배출 및 분리수거는 A동 B3층 분리수거장에 직접 배출',
     verifiedAt: CHECKED_0926,
+  },
+
+  {
+    title: '빛솔재 거주증명서 받아서 전입신고하기',
+    dueOffsetDays: null,
+    why: '기숙사에서 전입신고를 대신 해주지 않습니다. 직접 하지 않으면 전입신고 기한을 놓칠 수 있습니다.',
+    howTo:
+      '빛솔재 홈페이지에서 거주증명서를 발급받아, 본인이 직접 주민센터 방문 또는 정부24로 전입신고합니다. ' +
+      '궁금한 점은 빛솔재 행정실(B2 207호, 평일 09:00~17:30)에 문의합니다.',
+    linkUrl: 'https://kw.happydorm.or.kr/',
+    placeName: '빛솔재 행정실',
+    placeAddress: '서울특별시 노원구 광운로 21, B2 207호',
+    placePhone: '02-6958-9402',
+    category: 'ADMIN',
+    housingTypes: ['DORM'],
+    contractTypes: [],
+    sourceNote:
+      '2026-10-02 광운대학교 행복기숙사 빛솔재 행정실 전화 확인: 행정실이 전입신고를 일괄 처리하지 않으며, ' +
+      '입사생이 홈페이지에서 거주증명서를 발급받아 직접 신고 / 광운대학교 행복기숙사 공식 홈페이지',
+    verifiedAt: CHECKED_1002,
   },
 
   // ───────── 생활 (차량) ─────────
@@ -233,12 +293,36 @@ export const seedTasks: SeedTask[] = [
     linkUrl: null,
     placeName: '노원구시설관리공단 주차사업팀',
     placeAddress: '서울특별시 노원구 상계로1길 34, 2층',
-    placePhone: '02-2289-6727',
+    placePhone: '02-2289-6732',
     category: 'LIFE',
     housingTypes: [],
     contractTypes: [],
     requiresCar: true,
-    sourceNote: '노원구시설관리공단 「거주자우선주차장 신청/배정안내」: 온라인·방문 신청 절차, 정기신청 기간, 문의 02-2289-6727',
-    verifiedAt: CHECKED_0926,
+    sourceNote:
+      '노원구시설관리공단 「거주자우선주차장 신청/배정안내」: 온라인·방문 신청 절차, 정기신청 기간. ' +
+      '전화번호는 공단 「조직 및 부서안내」의 거주자우선주차 안내 번호(02-2289-6732)로 교차확인 ' +
+      '(안내 페이지의 02-2289-6727은 현재 조직표상 거주자보험 담당)',
+    verifiedAt: CHECKED_1002,
+  },
+
+  // ───────── 생활 (반려동물) ─────────
+  {
+    title: '반려견 동물등록하기',
+    // 기한이 '소유권을 얻은 날·월령 2개월이 된 날부터 30일'이라 이사일로 환산할 수 없다.
+    dueOffsetDays: null,
+    why: '등록하지 않으면 과태료가 부과됩니다(1차 20만원, 2차 40만원, 3차 이상 60만원).',
+    howTo:
+      '월령 2개월 이상인 개는 기르기 시작한 날(또는 2개월이 된 날)부터 30일 안에 등록해야 합니다. ' +
+      '월계동 등록 대행기관: 아란종합동물병원(02-905-7588), 우솔동물병원(02-973-7588), ' +
+      '웰니스 동물병원(월계이마트, 02-949-0975), 유림동물병원(02-900-7710).',
+    linkUrl: 'https://www.animal.go.kr/front/awtis/record/recordAgencyList.do?menuNo=2000000002',
+    category: 'LIFE',
+    housingTypes: [],
+    contractTypes: [],
+    requiresPet: true,
+    sourceNote:
+      '국가동물보호정보시스템 「동물등록 대행기관 조회」(노원구 월계동 4곳) / ' +
+      '국가법령정보센터 「동물보호법」·시행령(등록대상·기한) / 농림축산식품부 「반려동물 펫티켓」(2026-03-13, 과태료)',
+    verifiedAt: CHECKED_1002,
   },
 ];
