@@ -1,6 +1,7 @@
 import { prisma } from '@/lib/db';
 import { readJsonBody, requireUser } from '@/lib/auth';
-import { toAnswerItem, validateAnswerText } from '@/lib/questionView';
+import { validateAnswer } from '@/lib/answerValidation';
+import { answerSelect, toAnswerItem } from '@/lib/questionView';
 import type { ApiErrorResponse, CreateAnswerResponse } from '@/lib/types';
 
 function error(message: string, status: number) {
@@ -19,32 +20,24 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   const body = await readJsonBody(request);
   if (body instanceof Response) return body;
 
-  const input = validateAnswerText(body);
+  const input = validateAnswer(body);
   if (!input.ok) return error(input.error, 400);
 
   const { id } = await params;
   const question = await prisma.question.findUnique({ where: { id }, select: { status: true } });
   if (!question) return error('없는 질문입니다.', 404);
-  if (question.status === 'PROMOTED') return error('이미 할 일로 등록된 질문입니다.', 409);
+  if (question.status === 'PROMOTED') return error('이미 할 일로 정리된 질문입니다.', 409);
 
   const created = await prisma.$transaction(async (tx) => {
     const answer = await tx.answer.create({
-      data: { questionId: id, authorId: auth.id, text: input.text },
-      select: {
-        id: true,
-        questionId: true,
-        text: true,
-        isHidden: true,
-        createdAt: true,
-        author: { select: { nickname: true } },
-        confirmations: { select: { userId: true } },
-      },
+      data: { questionId: id, authorId: auth.id, text: input.value.text },
+      select: answerSelect(auth.id),
     });
-    // OPEN 인 경우에만 바꾼다. 이미 ANSWERED 면 그대로 둔다.
+    // 조건부 갱신이라 동시에 여러 답변이 달려도 결과가 같다. 이미 ANSWERED 면 그대로 둔다.
     await tx.question.updateMany({ where: { id, status: 'OPEN' }, data: { status: 'ANSWERED' } });
     return answer;
   });
 
-  const response: CreateAnswerResponse = { answer: toAnswerItem(created, auth.id) };
+  const response: CreateAnswerResponse = { answer: toAnswerItem(created) };
   return Response.json(response, { status: 201 });
 }

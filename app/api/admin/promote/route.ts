@@ -8,13 +8,20 @@ function error(message: string, status: number) {
   return Response.json(body, { status });
 }
 
-/** 트랜잭션 안에서 상태가 맞지 않을 때 던지는 표시. 응답 코드로 바꾼다. */
-class PromoteConflict extends Error {}
+/** 트랜잭션 안에서 승격할 수 없는 상태일 때 던지고, 바깥에서 응답 코드로 바꾼다. */
+class NotPromotable extends Error {
+  constructor(readonly status: 404 | 409, message: string) {
+    super(message);
+  }
+}
 
 /**
- * POST /api/admin/promote — 답변을 할 일로 승격한다 (ADMIN).
- * 할 일을 발행하고 질문을 PROMOTED 로 바꾸는 일을 한 트랜잭션으로 묶는다 — 둘 중 하나만 되면 안 된다.
- * 발행하는 즉시 다음 사람의 /api/tasks/match 결과에 같은 규칙(lib/matching.ts)으로 걸린다.
+ * POST /api/admin/promote — 답변을 할 일로 발행한다 (ADMIN).
+ *
+ * 한 트랜잭션 안에서 ① 질문을 ANSWERED → PROMOTED 로 조건부 갱신하고 ② 할 일을 만든다.
+ * 조건부 갱신을 먼저 하므로 운영자가 두 번 눌러도 할 일이 두 개 생기지 않고,
+ * 할 일 생성이 실패하면 질문 상태도 함께 되돌아간다.
+ * AI 초안(draft)과는 독립이다 — 초안이 없어도 운영자가 직접 채워 발행할 수 있다.
  */
 export async function POST(request: Request) {
   const admin = await requireAdmin();
@@ -23,24 +30,27 @@ export async function POST(request: Request) {
   const body = await readJsonBody(request);
   if (body instanceof Response) return body;
 
+  // 검증 결과의 value 만 쓴다. 요청 본문을 직접 쓰지 않는다.
   const input = validatePromoteRequest(body);
   if (!input.ok) return error(input.error, 400);
   const { questionId, task, sourceNote } = input.value;
 
-  const question = await prisma.question.findUnique({ where: { id: questionId }, select: { status: true } });
-  if (!question) return error('없는 질문입니다.', 404);
-  if (question.status === 'OPEN') return error('답변이 달리지 않은 질문은 승격할 수 없습니다.', 409);
-  if (question.status === 'PROMOTED') return error('이미 승격된 질문입니다.', 409);
-
   try {
     const created = await prisma.$transaction(async (tx) => {
-      // 두 운영자가 동시에 눌러도 한 번만 승격되도록, ANSWERED 일 때만 바꾸고 바뀐 수를 확인한다.
       const moved = await tx.question.updateMany({
         where: { id: questionId, status: 'ANSWERED' },
         data: { status: 'PROMOTED' },
       });
-      if (moved.count !== 1) throw new PromoteConflict();
+      if (moved.count === 0) {
+        const exists = await tx.question.findUnique({ where: { id: questionId }, select: { status: true } });
+        if (!exists) throw new NotPromotable(404, '없는 질문입니다.');
+        throw new NotPromotable(
+          409,
+          exists.status === 'PROMOTED' ? '이미 할 일로 정리된 질문입니다.' : '답변이 없는 질문은 승격할 수 없습니다.',
+        );
+      }
 
+      // source · verifiedAt · isPublished 는 서버가 정한다.
       return tx.task.create({
         data: {
           ...task,
@@ -57,7 +67,7 @@ export async function POST(request: Request) {
     const response: PromoteResponse = { taskId: created.id };
     return Response.json(response, { status: 201 });
   } catch (e) {
-    if (e instanceof PromoteConflict) return error('이미 승격된 질문입니다.', 409);
+    if (e instanceof NotPromotable) return error(e.message, e.status);
     throw e;
   }
 }
