@@ -13,6 +13,13 @@ const task: Task = {
   studentOnly: false, source: 'SEED', promotedFromQuestionId: null, sourceNote: '검증된 출처',
   verifiedAt: new Date('2026-10-01'), isPublished: true, createdAt: new Date(), updatedAt: new Date(),
 };
+const unrelatedTask: Task = {
+  ...task,
+  id: 'b',
+  title: '음식물 쓰레기 버리기',
+  why: '깨끗한 골목 유지',
+  howTo: '전용 봉투 사용',
+};
 const profile = { housingType: 'ONE_ROOM', contractType: 'MONTHLY', moveInDate: '2026-10-01', zone: '비공개 구역', hasCar: true, hasPet: true, isStudent: true };
 const fetchMock = vi.fn<typeof fetch>();
 const request = (body: unknown) => new Request('http://localhost/api/ask', { method: 'POST', body: JSON.stringify(body) });
@@ -57,6 +64,55 @@ describe('POST /api/ask', () => {
     expect(JSON.stringify(sent)).not.toContain('비공개 구역');
     expect(sent.profileLine).not.toMatch(/hasCar|hasPet|isStudent/);
     expect(db.create.mock.calls[0][0].data).toMatchObject({ sourceIds: ['task:a'], confidence: 'PARTIAL', aiAnswer: '관련 항목의 원문 카드를 확인해 주세요.' });
+  });
+
+  it('키워드 후보 밖의 기존 Task ID는 근거로 인정하지 않는다', async () => {
+    vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
+    db.findMany.mockResolvedValueOnce([task, unrelatedTask]);
+    fetchMock.mockResolvedValueOnce(ai('관련 항목을 확인해 주세요.', ['task:b']));
+
+    const response = await POST(request({ text: '전입신고는?' }));
+
+    expect(await response.json()).toMatchObject({
+      mode: 'AI', answer: null, confidence: 'UNKNOWN', tasks: [],
+    });
+    const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
+    const sent = JSON.parse(body.contents[0].parts[0].text);
+    expect(sent.knowledge).toContain('task:a | 전입신고 하기');
+    expect(sent.knowledge).not.toContain('task:b | 음식물 쓰레기 버리기');
+    expect(db.create.mock.calls[0][0].data).toMatchObject({
+      aiAnswer: null, sourceIds: [], confidence: 'UNKNOWN',
+    });
+  });
+
+  it('키워드 후보가 없으면 활성화 상태에서도 Google을 호출하지 않는다', async () => {
+    vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
+
+    const response = await POST(request({ text: '주차장' }));
+
+    expect(await response.json()).toMatchObject({ mode: 'FALLBACK', tasks: [] });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it('Gemini에는 검색 순위가 높은 후보를 최대 3개만 전달한다', async () => {
+    vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
+    const rows = Array.from({ length: 4 }, (_, index): Task => ({
+      ...task,
+      id: String(index),
+      title: `생활 신고 ${index}`,
+    }));
+    db.findMany.mockResolvedValueOnce(rows);
+    fetchMock.mockResolvedValueOnce(ai('관련 항목을 확인해 주세요.', ['task:0']));
+
+    await POST(request({ text: '신고' }));
+
+    const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
+    const sent = JSON.parse(body.contents[0].parts[0].text);
+    expect(sent.knowledge.split('\n')).toEqual([
+      'task:0 | 생활 신고 0 | 14일 이내 신고 | 주민센터 방문',
+      'task:1 | 생활 신고 1 | 14일 이내 신고 | 주민센터 방문',
+      'task:2 | 생활 신고 2 | 14일 이내 신고 | 주민센터 방문',
+    ]);
   });
 
   it.each([
