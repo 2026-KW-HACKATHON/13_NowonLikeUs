@@ -4,6 +4,7 @@ import { useEffect, useRef, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { AUTH_LIMITS, loginFieldErrors, readApiError, signupFieldErrors, type FieldErrors } from '@/lib/authView';
+import { loadSession } from '@/lib/useSession';
 import type { LoginRequest, SignupRequest } from '@/lib/types';
 
 type Mode = 'login' | 'signup';
@@ -73,6 +74,8 @@ export default function AuthForm({ mode, next }: { mode: Mode; next: string }) {
         setSending(false);
         return;
       }
+      // 제호 · 답변 양식이 보는 로그인 상태를 새로 읽은 뒤 이동한다. 안 그러면 이동한 화면에 "로그인"이 남는다.
+      await loadSession(true);
       // 뒤로 가기로 로그인 화면에 돌아오지 않게 replace. refresh 로 서버 컴포넌트가 새 쿠키를 읽게 한다.
       router.replace(next);
       router.refresh();

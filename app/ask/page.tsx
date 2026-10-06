@@ -121,8 +121,8 @@ export default function AskPage() {
           외부 전송 사실도 추가해야 한다. 지금은 기본값이 전송 차단이라 서버 저장만 적는다.
         */}
         <p id="ask-notice" className="ask-notice">
-          질문 내용과 주거형태 · 계약형태는 답변과 후속 확인을 위해 서버에 저장됩니다. 이름 · 연락처 ·
-          상세 주소 같은 개인정보는 적지 마세요.
+          확인된 정보로 답하지 못한 질문은 주거형태 · 계약형태와 함께 &lsquo;이웃의 질문&rsquo;에 공개되어
+          주민이 답할 수 있습니다. 이름 · 연락처 · 상세 주소 같은 개인정보는 적지 마세요.
         </p>
 
         <button type="submit" disabled={sending}>

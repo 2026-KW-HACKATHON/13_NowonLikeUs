@@ -11,7 +11,7 @@ export default async function SignupPage({ searchParams }: PageProps<'/signup'>)
 
   return (
     <main>
-      <Masthead profile={null} />
+      <Masthead profile={null} account={false} />
       <Link href="/tasks" className="back">
         ← 내 할 일
       </Link>
