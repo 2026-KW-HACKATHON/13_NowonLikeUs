@@ -158,7 +158,6 @@ POST https://generativelanguage.googleapis.com/v1beta/models/{model}:generateCon
 
 ```ts
 export interface GeminiAnswer {
-  answer: string;
   sourceIds: string[];
   confidence: Confidence;
 }
@@ -168,7 +167,7 @@ askGemini(question: string, knowledge: string, profileLine: string): Promise<Gem
 
 **실패하면 반드시 `null`을 돌려주세요.** 던지지 마세요. 호출자가 폴백을 타야 합니다. 키가 없을 때, HTTP 에러일 때, JSON 파싱이 깨질 때, 타임아웃(15초)일 때 전부 `null`입니다.
 
-**구조화 출력을 씁니다.** `generationConfig`에 `responseMimeType: 'application/json'`과 `responseSchema`(`answer` string / `sourceIds` string[] / `confidence` enum)를 넣고 `temperature: 0`으로 두세요.
+**구조화 출력을 씁니다.** `generationConfig`에 `responseMimeType: 'application/json'`과 `responseSchema`(`sourceIds` string[] / `confidence` enum)를 넣고 `temperature: 0`으로 두세요.
 
 ### 프롬프트 규칙 — 여기가 1층·3층 방어입니다
 
@@ -176,20 +175,13 @@ askGemini(question: string, knowledge: string, profileLine: string): Promise<Gem
 너는 월계1동 생활 안내 도우미다.
 
 규칙:
-1. 아래 <지식>에 있는 내용만으로 답한다.
-2. <지식>에 없으면 confidence를 UNKNOWN으로 하고
-   answer에 "아직 확인되지 않은 내용입니다"라고만 쓴다. 추측하지 않는다.
-3. 금액, 기한, 날짜, 전화번호, 주소는 answer에 절대 쓰지 않는다.
-   그 값들은 화면에서 원문 카드로 따로 보여준다.
-   answer에는 "어떤 항목을 봐야 하는지"만 안내 문장으로 쓴다.
-   서버는 이 문장을 노출하지 않고 근거 검증 후 고정 안내로 교체한다.
-4. 근거로 쓴 항목의 id를 sourceIds에 그대로 넣는다. 지식에 없는 id를 만들지 않는다.
-5. answer는 두 문장 이내로 쓴다.
+1. 아래 <지식>에서 질문에 답하는 데 필요한 항목만 고른다.
+2. <지식>에 없으면 confidence를 UNKNOWN으로 하고 sourceIds는 빈 배열로 둔다. 추측하지 않는다.
+3. 근거로 쓴 항목의 id를 sourceIds에 그대로 넣는다. 지식에 없는 id를 만들지 않는다.
 ```
 
-**3번이 특히 중요합니다.** "과태료 5만원"을 AI가 문장으로 쓰게 하면 언젠가 틀립니다.
-그래서 화면과 저장소에는 AI 문장을 통과시키지 않고 서버의 고정 안내만 사용합니다.
-숫자와 상세 설명은 검증된 DB 원문 카드가 담당합니다.
+Gemini는 안내 문장을 만들지 않고 근거 카드만 고릅니다. 화면과 저장소의 안내 문장은
+서버가 소유한 고정 문구만 사용하고, 숫자와 상세 설명은 검증된 DB 원문 카드가 담당합니다.
 
 지식 블록은 한 줄에 한 항목입니다.
 
@@ -215,12 +207,12 @@ task:{id} | {title} | {why} | {howTo}
 5. **`null`이면 폴백** — 프로필에 맞는 후보 안에서 `keywordSearch`를 실행하고 `mode: 'FALLBACK'`, `answer: null`, `confidence: 'UNKNOWN'`으로 응답. **절대 500을 내지 마세요.**
 6. 응답이 있으면 프로필에 맞는 후보 ID 집합을 `knownIds`로 사용해 `verifyGrounding(ai.sourceIds, knownIds, ai.confidence)`
 7. `validSourceIds`에 해당하는 후보만 `tasks`에 담습니다 — 화면이 이걸 원문 카드로 렌더합니다
-8. **`confidence`가 `UNKNOWN`이면 `answer`를 `null`로 보내고, 그 외에는 서버 고정 안내를 보냅니다.** AI가 만든 문장은 화면에 띄우지 않습니다
+8. **`confidence`가 `UNKNOWN`이면 `answer`를 `null`로 보내고, 그 외에는 서버 고정 안내를 보냅니다.** 안내 문장은 서버에서만 생성합니다
 9. `Question`을 저장합니다 — `text`, `aiAnswer`, `sourceIds`(검증 통과분만), `confidence`, `ctxHousingType`, `ctxContractType`
 
 **구현 시 연결 규칙:** 6~8번은 `lib/grounding.ts`의 `groundAnswer(ai, knownIds)`로 함께 처리합니다.
 반환된 서버 고정 `answer`와 `confidence`를 API 응답 및 `Question.aiAnswer` 저장에 사용하고,
-카드와 저장할 근거는 `validSourceIds`에서 선택합니다. `ai.answer`를 직접 응답하거나 저장하지 않습니다.
+카드와 저장할 근거는 `validSourceIds`에서 선택합니다. Gemini에는 안내 문장을 요구하지 않습니다.
 AI가 `GROUNDED`라고 했어도 서버 검증 후 `UNKNOWN`이면 `answer`는 반드시 `null`입니다.
 차량·반려동물·학생 여부는 필터에만 쓰고 DB 저장이나 Gemini 전송에는 포함하지 않습니다.
 
@@ -241,7 +233,7 @@ AI가 `GROUNDED`라고 했어도 서버 검증 후 `UNKNOWN`이면 `answer`는 �
 - [ ] 원룸 프로필에는 기숙사 전용 카드가 나오지 않는다
 - [ ] Gemini에는 프로필에 맞는 전체 후보가 전달되고 프로필 밖 ID는 근거에서 제외된다
 - [ ] Gemini 실패 시에는 프로필에 맞는 할 일 안에서만 키워드 검색한다
-- [ ] **그 `answer`가 서버 고정 안내이고 AI가 만든 "14일" 같은 문장은 노출되지 않는다** ← 3층 방어 확인
+- [ ] Gemini 응답 스키마에는 `answer`가 없고 API의 `answer`는 서버 고정 안내다
 - [ ] 지식에 없는 걸 물으면 `confidence: "UNKNOWN"`, `answer: null`
 - [ ] **`GEMINI_API_KEY`를 빈 문자열로 두고 같은 요청을 보내면 `mode: "FALLBACK"`이 오고 500이 나지 않는다**
 

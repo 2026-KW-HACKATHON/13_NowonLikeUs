@@ -4,10 +4,10 @@ vi.mock('server-only', () => ({}));
 
 import { askGemini } from '@/lib/gemini';
 
-const answer = { answer: '관련 항목을 확인해 주세요.', sourceIds: ['task:a'], confidence: 'GROUNDED' };
+const selection = { sourceIds: ['task:a'], confidence: 'GROUNDED' };
 const fetchMock = vi.fn<typeof fetch>();
 const call = () => askGemini('전입신고는?', 'task:a | 전입신고 | 안내 | 신청', '월세');
-const response = (value: unknown = answer, finishReason = 'STOP') => Response.json({
+const response = (value: unknown = selection, finishReason = 'STOP') => Response.json({
   candidates: [{ content: { role: 'model', parts: [{ text: JSON.stringify(value) }] }, finishReason }],
 });
 
@@ -25,34 +25,27 @@ afterEach(() => {
 });
 
 describe('askGemini', () => {
-  it.each(['14일 안입니다.', '방 번호: 이사일', '이번 주소 변경은 관련 문서를 확인하세요.'])(
-    '문구 판정 없이 구조화된 근거 선택 결과를 반환한다: %s', async (text) => {
-      const value = { ...answer, answer: text };
-      fetchMock.mockResolvedValueOnce(response(value));
-      expect(await call()).toEqual(value);
-    },
-  );
-
-  it('일반 안내도 구조화된 근거 선택 결과로 반환한다', async () => {
-    const value = { ...answer, answer: '관련 항목을 확인해 주세요.' };
-    fetchMock.mockResolvedValueOnce(response(value));
-    expect(await call()).toEqual(value);
+  it('answer 없이 구조화된 근거 선택 결과를 반환한다', async () => {
+    fetchMock.mockResolvedValueOnce(response());
+    expect(await call()).toEqual(selection);
   });
 
   it('구조화된 요청을 보내고 올바른 응답을 반환한다', async () => {
     fetchMock.mockResolvedValueOnce(response());
-    expect(await call()).toEqual(answer);
+    expect(await call()).toEqual(selection);
     const [url, options] = fetchMock.mock.calls[0];
     expect(url).toBe('https://generativelanguage.googleapis.com/v1beta/models/gemini-3.1-flash-lite:generateContent');
     expect(options?.method).toBe('POST');
     expect(new Headers(options?.headers).get('x-goog-api-key')).toBe('test-key');
     const body = JSON.parse(options?.body as string);
     expect(body.generationConfig).toMatchObject({ temperature: 0, responseMimeType: 'application/json' });
-    expect(body.generationConfig.responseSchema.required).toEqual(['answer', 'sourceIds', 'confidence']);
+    expect(body.generationConfig.responseSchema.required).toEqual(['sourceIds', 'confidence']);
+    expect(body.generationConfig.responseSchema.properties).not.toHaveProperty('answer');
     expect(body.contents[0].parts[0].text).toContain('전입신고는?');
     expect(body.contents[0].parts[0].text).toContain('task:a | 전입신고');
     expect(body.contents[0].parts[0].text).toContain('월세');
     expect(body.systemInstruction.parts[0].text).toContain('UNKNOWN');
+    expect(body.systemInstruction.parts[0].text).not.toContain('answer');
   });
 
   it('환경 변수의 모델을 사용한다', async () => {
@@ -96,22 +89,22 @@ describe('askGemini', () => {
   });
 
   it.each([
-    null, [], {}, { ...answer, answer: 1 }, { ...answer, answer: ' ' },
-    { ...answer, sourceIds: 'task:a' }, { ...answer, sourceIds: [1] },
-    { ...answer, confidence: 'CERTAIN' },
+    null, [], {}, { confidence: 'GROUNDED' }, { sourceIds: ['task:a'] },
+    { ...selection, sourceIds: 'task:a' }, { ...selection, sourceIds: [1] },
+    { ...selection, confidence: 'CERTAIN' },
   ])('생성 데이터의 형식이 잘못되면 null이다: %j', async (value) => {
     fetchMock.mockResolvedValueOnce(response(value));
     expect(await call()).toBeNull();
   });
 
   it.each(['MAX_TOKENS', 'SAFETY'])('정상 종료가 아닌 %s 응답은 사용하지 않는다', async (reason) => {
-    fetchMock.mockResolvedValueOnce(response(answer, reason));
+    fetchMock.mockResolvedValueOnce(response(selection, reason));
     expect(await call()).toBeNull();
   });
 
   it.each(['PARTIAL', 'UNKNOWN'])('%s 판정은 후속 근거 검증 단계에 그대로 전달한다', async (confidence) => {
-    fetchMock.mockResolvedValueOnce(response({ ...answer, sourceIds: [], confidence }));
-    expect(await call()).toEqual({ ...answer, sourceIds: [], confidence });
+    fetchMock.mockResolvedValueOnce(response({ sourceIds: [], confidence }));
+    expect(await call()).toEqual({ sourceIds: [], confidence });
   });
 
   it('15초가 지나면 실제 요청 신호를 중단하고 null을 반환한다', async () => {
@@ -146,7 +139,7 @@ describe('askGemini', () => {
   it('정상 응답 후에는 시간 제한 타이머를 정리한다', async () => {
     vi.useFakeTimers();
     fetchMock.mockResolvedValueOnce(response());
-    expect(await call()).toEqual(answer);
+    expect(await call()).toEqual(selection);
     expect(vi.getTimerCount()).toBe(0);
   });
 });
