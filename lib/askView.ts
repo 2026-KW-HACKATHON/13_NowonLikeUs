@@ -38,15 +38,19 @@ export function describeAnswer(res: AskResponse): AnswerView {
 }
 
 /**
- * 질문과 함께 보낼 상황 정보.
+ * 질문과 함께 보낼 상황 정보. 무엇을 어디에 쓰는지는 `AskProfile` 주석에 있다.
  *
- * 서버가 쓰는 건 주거형태 · 계약형태(질문 상황으로 저장)와 이사일(카드 기한 계산)뿐이다.
- * 구역 · 차량 · 반려동물 · 학생 여부는 보내지 않는다. 쓰지 않는 개인정보는 애초에 내보내지 않는다.
+ * 차량 · 반려동물 · 학생 여부는 서버가 할 일을 거르는 데 필요해서 보낸다. 빼면 원룸 사용자에게
+ * 기숙사 전용 카드가 나가는 식으로 내 상황과 맞지 않는 카드가 섞인다.
+ * 구역은 쓰는 곳이 없어서 보내지 않는다.
  */
 export function askProfile(profile: Profile): AskProfile {
   return {
     housingType: profile.housingType,
     contractType: profile.contractType,
     moveInDate: profile.moveInDate,
+    hasCar: profile.hasCar,
+    hasPet: profile.hasPet,
+    isStudent: profile.isStudent,
   };
 }

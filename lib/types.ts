@@ -101,10 +101,19 @@ export interface TaskDetailResponse {
 /**
  * 질문과 함께 보내는 상황 정보.
  *
- * 서버는 주거형태 · 계약형태를 질문 상황으로 저장하고, 이사일은 카드 기한 계산에만 쓴다.
- * 나머지 프로필 필드(구역 · 차량 · 반려동물 · 학생 여부)는 쓰지 않으므로 보내지 않는다.
+ * 서버는 이 값으로 할 일을 내 상황에 맞는 것만 거른 뒤 찾는다 (`lib/matching.ts` 와 같은 규칙).
+ * 화면이 받는 카드에는 노출 조건이 없어서, 거르는 일은 서버만 할 수 있다.
+ *
+ * - 주거형태 · 계약형태: 거르기 + 질문 상황으로 DB 저장 + AI 에 한 줄로 전달
+ * - 차량 · 반려동물 · 학생 여부: 거르기에만 쓴다. 저장하지 않고 외부로 보내지 않는다
+ * - 이사일: 카드의 남은 날짜 계산에만 쓴다. 저장하지 않고 외부로 보내지 않는다
+ *
+ * 구역은 보내지 않는다. 월계1동 안에서 구역별로 갈리는 할 일이 없다.
  */
-export type AskProfile = Pick<Profile, 'housingType' | 'contractType' | 'moveInDate'>;
+export type AskProfile = Pick<
+  Profile,
+  'housingType' | 'contractType' | 'moveInDate' | 'hasCar' | 'hasPet' | 'isStudent'
+>;
 
 /** POST /api/ask 요청 */
 export interface AskRequest {
