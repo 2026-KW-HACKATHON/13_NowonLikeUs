@@ -890,3 +890,93 @@ button:disabled {
 .conf--unknown {
   --conf-color: var(--text-soft);
 }
+
+/* ---------- 로그인 · 가입 ---------- */
+
+.auth-form {
+  margin-bottom: var(--space-4);
+}
+
+.auth-field {
+  margin-bottom: var(--space-4);
+}
+
+.auth-field__label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.auth-field__hint {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.auth-field__error {
+  margin-top: 6px;
+}
+
+.text-input {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  font: inherit;
+  border: 1.5px solid var(--border-control);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+}
+
+.text-input[aria-invalid="true"] {
+  border-color: var(--danger);
+  border-width: 3px;
+  padding: 0 12.5px;
+}
+
+.text-input:disabled {
+  color: var(--text-soft);
+}
+
+/* 체크박스 자체는 작아도 글자까지 눌리게 해서 터치 영역 44px 를 맞춘다. */
+.auth-reveal {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  margin: calc(var(--space-2) * -1) 0 var(--space-3);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-reveal input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.auth-form__error {
+  margin: 0 0 var(--space-3);
+}
+
+.auth-form__error:focus {
+  outline: none;
+}
+
+.auth-switch {
+  margin: 0;
+  text-align: center;
+  font-size: 16px;
+}
+
+.auth-switch a {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+  font-weight: 700;
+}
