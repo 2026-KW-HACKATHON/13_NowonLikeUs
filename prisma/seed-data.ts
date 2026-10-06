@@ -35,7 +35,8 @@ export const seedTasks: SeedTask[] = [
     linkUrl: 'https://www.gov.kr/portal/onestopSvc/transferReport',
     ...CENTER,
     category: 'ADMIN',
-    housingTypes: [],
+    // 기숙사(DORM)는 거주증명서가 필요해서 아래 '빛솔재 거주증명서' 카드가 따로 안내한다.
+    housingTypes: ['ONE_ROOM', 'OFFICETEL', 'VILLA', 'APARTMENT'],
     contractTypes: [],
     sourceNote:
       '정부24 「전입신고」 및 주민등록법 시행령 전입신고서 유의사항: 전입한 날부터 14일 이내 신고, ' +
@@ -100,8 +101,8 @@ export const seedTasks: SeedTask[] = [
     dueOffsetDays: null,
     why: '정해진 요일·시간·장소를 지키지 않으면 수거되지 않을 수 있습니다. 특히 토요일과 공휴일 전날에는 내놓으면 안 됩니다.',
     howTo:
-      '일요일~금요일(공휴일 제외) 18시~24시에 종량제봉투에 담아 내 집 앞에 내놓습니다. ' +
-      '월계1동 수거업체는 한국진개입니다.',
+      '일요일~금요일 18시~24시에 종량제봉투에 담아 내 집 앞에 내놓습니다. ' +
+      '토요일과 공휴일 전날에는 내놓지 않습니다. 월계1동 수거업체는 한국진개입니다.',
     linkUrl: null,
     placeName: '한국진개 (월계1동 수거업체)',
     placeAddress: null,
@@ -110,8 +111,9 @@ export const seedTasks: SeedTask[] = [
     housingTypes: ['ONE_ROOM', 'VILLA'],
     contractTypes: [],
     sourceNote:
-      '노원구청 「생활폐기물배출안내 및 종량제배출방법」: 일반주택·상가지역은 일~금(공휴일 제외) 18:00~24:00 ' +
-      '내 집·내 점포 앞 배출, 월계1동·월계2동 수거업체 한국진개(02-994-3440)',
+      '노원구청 「생활폐기물배출안내 및 종량제배출방법」: 일반주택·상가지역은 일~금 18:00~24:00 ' +
+      '내 집·내 점포 앞 배출, 수거업체 표의 "토요일과 공휴일 전일은 배출금지"를 적용 ' +
+      '(같은 페이지 상단의 "공휴일 제외"보다 구체적인 기준), 월계1동·월계2동 수거업체 한국진개(02-994-3440)',
     verifiedAt: CHECKED_0926,
   },
   {
@@ -263,11 +265,13 @@ export const seedTasks: SeedTask[] = [
 
   {
     title: '빛솔재 거주증명서 받아서 전입신고하기',
-    dueOffsetDays: null,
-    why: '기숙사에서 전입신고를 대신 해주지 않습니다. 직접 하지 않으면 전입신고 기한을 놓칠 수 있습니다.',
+    dueOffsetDays: 14,
+    why:
+      '기숙사에서 전입신고를 대신 해주지 않습니다. 이사한 날부터 14일 안에 직접 하지 않으면 ' +
+      '5만원 이하의 과태료가 부과될 수 있습니다.',
     howTo:
       '빛솔재 홈페이지에서 거주증명서를 발급받아, 본인이 직접 주민센터 방문 또는 정부24로 전입신고합니다. ' +
-      '궁금한 점은 빛솔재 행정실(B2 207호, 평일 09:00~17:30)에 문의합니다.',
+      '궁금한 점은 빛솔재 행정실(B2 207호, 09:00~17:30)에 문의합니다.',
     linkUrl: 'https://kw.happydorm.or.kr/',
     placeName: '빛솔재 행정실',
     placeAddress: '서울특별시 노원구 광운로 21, B2 207호',
@@ -277,7 +281,8 @@ export const seedTasks: SeedTask[] = [
     contractTypes: [],
     sourceNote:
       '2026-10-02 광운대학교 행복기숙사 빛솔재 행정실 전화 확인: 행정실이 전입신고를 일괄 처리하지 않으며, ' +
-      '입사생이 홈페이지에서 거주증명서를 발급받아 직접 신고 / 광운대학교 행복기숙사 공식 홈페이지',
+      '입사생이 홈페이지에서 거주증명서를 발급받아 직접 신고 / 광운대학교 행복기숙사 공식 홈페이지 / ' +
+      '기한·과태료는 정부24 「전입신고」(전입한 날부터 14일 이내, 미신고 시 5만원 이하 과태료)',
     verifiedAt: CHECKED_1002,
   },
 
