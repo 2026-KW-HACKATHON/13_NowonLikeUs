@@ -1,3 +1,4 @@
+import { getSessionUser } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { askGemini } from '@/lib/gemini';
 import { groundAnswer } from '@/lib/grounding';
@@ -34,6 +35,9 @@ export async function POST(request: Request) {
   }
 
   const text = body.text.trim();
+  // 로그인했으면 질문자를 기록한다(자체 DB 에만, AI 요청에는 넣지 않는다). 비로그인 질문도 그대로 받는다.
+  // 세션을 읽지 못해도 질문은 막지 않고 비로그인으로 저장한다.
+  const asker = await getSessionUser().catch(() => null);
   try {
     const rows = await prisma.task.findMany({ where: { isPublished: true } });
     // 키가 있어도 기본값은 전송 금지. 유료 프로젝트·고지 정책 확인 후에만 서버에서 활성화한다.
@@ -50,6 +54,7 @@ export async function POST(request: Request) {
     const question = await prisma.question.create({
       data: {
         text, aiAnswer: answer, confidence, sourceIds: grounded?.validSourceIds ?? [],
+        askerId: asker?.id ?? null,
         ctxHousingType: profile?.housingType ?? null,
         ctxContractType: profile?.contractType ?? null,
       },
