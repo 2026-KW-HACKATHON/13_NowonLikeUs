@@ -17,6 +17,18 @@ function isDate(value: unknown): value is string {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
+/**
+ * 질문자 id. 로그인했고 그 계정이 지금도 DB 에 있을 때만 돌려준다(자체 DB 에만 저장, AI 요청에는 넣지 않는다).
+ * 세션을 못 읽거나, 지운 계정의 쿠키가 남아 있으면 null — 외래키 위반으로 질문 자체가 막히면 안 된다.
+ * 질문은 원래 로그인 없이 쓰는 기능이다.
+ */
+async function resolveAskerId(): Promise<string | null> {
+  const session = await getSessionUser().catch(() => null);
+  if (!session) return null;
+  const user = await prisma.user.findUnique({ where: { id: session.id }, select: { id: true } }).catch(() => null);
+  return user?.id ?? null;
+}
+
 /** 외부 AI는 명시 허용 시에만 호출한다. 질문과 최소 상황은 자체 DB에 저장한다. */
 export async function POST(request: Request) {
   const body: unknown = await request.json().catch(() => null);
@@ -35,9 +47,7 @@ export async function POST(request: Request) {
   }
 
   const text = body.text.trim();
-  // 로그인했으면 질문자를 기록한다(자체 DB 에만, AI 요청에는 넣지 않는다). 비로그인 질문도 그대로 받는다.
-  // 세션을 읽지 못해도 질문은 막지 않고 비로그인으로 저장한다.
-  const asker = await getSessionUser().catch(() => null);
+  const askerId = await resolveAskerId();
   try {
     const rows = await prisma.task.findMany({ where: { isPublished: true } });
     // 키가 있어도 기본값은 전송 금지. 유료 프로젝트·고지 정책 확인 후에만 서버에서 활성화한다.
@@ -54,7 +64,7 @@ export async function POST(request: Request) {
     const question = await prisma.question.create({
       data: {
         text, aiAnswer: answer, confidence, sourceIds: grounded?.validSourceIds ?? [],
-        askerId: asker?.id ?? null,
+        askerId,
         ctxHousingType: profile?.housingType ?? null,
         ctxContractType: profile?.contractType ?? null,
       },

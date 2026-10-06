@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Task } from '@prisma/client';
 
 vi.mock('server-only', () => ({}));
-const db = vi.hoisted(() => ({ findMany: vi.fn(), create: vi.fn() }));
-vi.mock('@/lib/db', () => ({ prisma: { task: { findMany: db.findMany }, question: { create: db.create } } }));
+const db = vi.hoisted(() => ({ findMany: vi.fn(), create: vi.fn(), findUser: vi.fn() }));
+vi.mock('@/lib/db', () => ({ prisma: { task: { findMany: db.findMany }, question: { create: db.create }, user: { findUnique: db.findUser } } }));
 const session = vi.hoisted(() => ({ getSessionUser: vi.fn() }));
 vi.mock('@/lib/auth', () => ({ getSessionUser: session.getSessionUser }));
 import { POST } from '@/app/api/ask/route';
@@ -29,6 +29,7 @@ beforeEach(() => {
   db.findMany.mockResolvedValue([task]);
   db.create.mockResolvedValue({ id: 'q-test' });
   session.getSessionUser.mockResolvedValue(null);
+  db.findUser.mockImplementation(({ where }: { where: { id: string } }) => Promise.resolve({ id: where.id }));
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.resetAllMocks(); });
 
@@ -167,5 +168,13 @@ describe('POST /api/ask', () => {
     expect(sent).not.toContain('user-secret-id');
     expect(sent).not.toContain('비밀닉네임');
     expect(db.create.mock.calls[0][0].data.askerId).toBe('user-secret-id');
+  });
+  // 지운 계정의 쿠키가 남아 있으면 askerId 외래키 위반으로 질문 전체가 503 이 된다. 로그인 없이 쓰는 기능이라 막히면 안 된다.
+  it('지운 계정의 쿠키가 남아 있으면 askerId 는 null 이고 질문은 200 이다', async () => {
+    session.getSessionUser.mockResolvedValue({ id: 'deleted-user', nickname: '탈퇴', role: 'MEMBER' });
+    db.findUser.mockResolvedValue(null);
+    const response = await POST(request({ text: '전입신고는?' }));
+    expect(response.status).toBe(200);
+    expect(db.create.mock.calls[0][0].data.askerId).toBeNull();
   });
 });
