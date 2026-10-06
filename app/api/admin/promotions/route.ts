@@ -20,7 +20,7 @@ export async function GET() {
   });
 
   const items = rows.map((row) => {
-    const question = toQuestionItem(row);
+      const question = toQuestionItem(row, { showAsker: true });
     return { question, totalConfirmations: totalConfirmations(question.answers) };
   });
 

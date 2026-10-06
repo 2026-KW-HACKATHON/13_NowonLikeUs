@@ -87,11 +87,12 @@ export function toAnswerItem(row: AnswerRow): AnswerItem {
  * 질문 하나와 답변들. 답변 순서는 DB 에서 정한 순서(오래된 순)를 그대로 둔다.
  * AI 가 모른다고 한 질문(UNKNOWN)은 aiAnswer 를 null 로 내린다(`lib/types.ts` 계약).
  */
-export function toQuestionItem(row: QuestionRow): QuestionItem {
+// 질문은 원래 익명이다. 공개 목록에는 닉네임을 내리지 않고, 운영자 승격 큐에서만 보여준다.
+export function toQuestionItem(row: QuestionRow, { showAsker = false }: { showAsker?: boolean } = {}): QuestionItem {
   return {
     id: row.id,
     text: row.text,
-    askerNickname: row.asker?.nickname ?? null,
+    askerNickname: showAsker ? (row.asker?.nickname ?? null) : null,
     ctxHousingType: row.ctxHousingType,
     ctxContractType: row.ctxContractType,
     aiAnswer: row.confidence === 'UNKNOWN' ? null : row.aiAnswer,

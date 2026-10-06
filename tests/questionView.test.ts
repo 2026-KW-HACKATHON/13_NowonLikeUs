@@ -52,8 +52,14 @@ describe('toQuestionItem', () => {
     expect(item.answers.map((a) => a.id)).toEqual(['first', 'second']);
   });
 
-  it('비로그인으로 물은 질문은 askerNickname 이 null 이다', () => {
-    expect(toQuestionItem(question({ asker: null })).askerNickname).toBeNull();
+    // 질문은 익명이다. 공개 목록에는 질문자 닉네임을 내리지 않고, 운영자 승격 큐에서만 보여준다.
+  it('기본(공개 목록)은 질문자가 있어도 askerNickname 이 null 이다', () => {
+    expect(toQuestionItem(question({ asker: { nickname: '새내기' } })).askerNickname).toBeNull();
+  });
+
+  it('운영자 큐(showAsker)에서는 질문자 닉네임을 보여준다, 비로그인 질문은 null', () => {
+    expect(toQuestionItem(question({ asker: { nickname: '새내기' } }), { showAsker: true }).askerNickname).toBe('새내기');
+    expect(toQuestionItem(question({ asker: null }), { showAsker: true }).askerNickname).toBeNull();
   });
 
   it('UNKNOWN 질문은 aiAnswer 를 null 로 내린다', () => {
