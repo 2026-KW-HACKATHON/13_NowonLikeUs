@@ -14,7 +14,8 @@ export async function GET() {
   if (admin instanceof Response) return admin;
 
   const rows: QuestionRow[] = await prisma.question.findMany({
-    where: { status: 'ANSWERED' },
+        // 답변이 전부 숨김이면 근거가 없어 큐에 넣지 않는다.
+    where: { status: 'ANSWERED', answers: { some: { isHidden: false } } },
     select: questionSelect(admin.id),
   });
 

@@ -38,7 +38,8 @@ export async function POST(request: Request) {
   try {
     const created = await prisma.$transaction(async (tx) => {
       const moved = await tx.question.updateMany({
-        where: { id: questionId, status: 'ANSWERED' },
+                // 보이는 답변이 하나도 없으면 갱신되지 않아 409(답변 없음)로 나간다.
+        where: { id: questionId, status: 'ANSWERED', answers: { some: { isHidden: false } } },
         data: { status: 'PROMOTED' },
       });
       if (moved.count === 0) {
