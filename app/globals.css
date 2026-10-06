@@ -30,6 +30,10 @@
   --danger: #8f2a19;
   --danger-soft: #fbeae6;
 
+  /* AI 답변 신뢰도 "일부만 확인됨"(노랑). 노랑을 글자색으로 쓰면 대비가 안 나와 갈색 쪽으로 내렸다. 8.2:1 */
+  --conf-partial: #5c4300;
+  --conf-partial-soft: #fbf0cc;
+
   --cat-admin: #143f7a;
   --cat-admin-soft: #e4ecf7;
   --cat-housing: #1a5239;
@@ -72,6 +76,9 @@
     --on-accent: #10231a;
     --danger: #ff9f88;
     --danger-soft: #3a211b;
+
+    --conf-partial: #f2cc5c;
+    --conf-partial-soft: #2f2708;
 
     --cat-admin: #8fbdf5;
     --cat-admin-soft: #15233a;
@@ -714,4 +721,172 @@ button:active {
 .done-toggle.on {
   background: var(--accent-soft);
   color: var(--accent);
+}
+
+/* ---------- 질문하기 ---------- */
+
+.ask-form {
+  margin-bottom: var(--space-5);
+}
+
+.ask-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.ask-input {
+  display: block;
+  width: 100%;
+  min-height: 140px;
+  padding: var(--space-2) 14px;
+  font: inherit;
+  line-height: 1.6;
+  color: inherit;
+  background: var(--surface);
+  border: 1.5px solid var(--border-control);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+
+.ask-input[aria-invalid="true"] {
+  border-color: var(--danger);
+  border-width: 3px;
+}
+
+.ask-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: 6px;
+}
+
+.ask-count {
+  margin: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+
+/* 오류는 입력칸 바로 아래에. 색 말고 문장으로도 알린다. */
+.field-error {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+/* 제출 버튼 바로 위에 둔다. 누르기 직전에 읽히는 자리여야 고지가 고지 노릇을 한다. */
+.ask-notice {
+  margin: var(--space-3) 0 var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--border-control);
+  background: var(--surface);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+button:disabled {
+  cursor: progress;
+  filter: none;
+  opacity: 1;
+  background: var(--text-soft);
+}
+
+.ask-result__title {
+  margin: 0 0 var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 2px solid var(--rule);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+/* 제목에 초점이 옮겨 와도 테두리가 거슬리지 않게. 키보드 초점은 전역 :focus-visible 이 따로 그린다. */
+.ask-result__title:focus {
+  outline: none;
+}
+
+.ask-result__sub {
+  margin: var(--space-5) 0 var(--space-1);
+  font-size: 16px;
+  font-weight: 900;
+  color: var(--text-soft);
+}
+
+.answer {
+  margin: 0;
+  padding: var(--space-3);
+  border-left: 8px solid var(--border-control);
+  background: var(--surface);
+}
+
+.answer--grounded {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.answer--partial {
+  border-left-color: var(--conf-partial);
+  background: var(--conf-partial-soft);
+}
+
+.answer--fallback {
+  font-weight: 700;
+}
+
+.answer__text {
+  margin: var(--space-2) 0 0;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.answer__hint {
+  margin: var(--space-1) 0 0;
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+/*
+ * 신뢰도 배지 — 기호 + 글자. 색만으로 구분하지 않는다.
+ * 색은 --conf-color 하나로 받는다. 기호 동그라미의 배경을 currentColor 로 하면
+ * 기호 글자색(흰색)을 따라가서 동그라미가 배경에 묻힌다.
+ */
+.conf {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px 3px 4px;
+  border-radius: 999px;
+  border: 1.5px solid var(--conf-color);
+  color: var(--conf-color);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.conf__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--conf-color);
+  color: var(--surface);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.conf--grounded {
+  --conf-color: var(--accent);
+}
+
+.conf--partial {
+  --conf-color: var(--conf-partial);
+}
+
+.conf--unknown {
+  --conf-color: var(--text-soft);
 }
