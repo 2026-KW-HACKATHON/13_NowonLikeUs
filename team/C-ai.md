@@ -91,12 +91,12 @@ describe('verifyGrounding', () => {
 
 ---
 
-## C-2. `lib/search.ts` — AI 호출 전 후보 선정과 실패 폴백
+## C-2. `lib/search.ts` — AI가 죽었을 때의 폴백
 
 **파일:** `lib/search.ts`, `tests/search.test.ts`
 
-먼저 관련 항목을 최대 3개로 좁혀 Gemini에 전달하고, 호출이 실패하거나 쿼터가 끊기면
-같은 후보를 그대로 반환합니다. **본선 시연 중에 일어날 수 있는 일입니다.**
+Gemini 호출이 실패하거나 쿼터가 끊기면, 프로필에 맞게 거른 할 일 안에서 관련 항목을
+최대 3개 찾아 반환합니다. **본선 시연 중에 일어날 수 있는 일입니다.**
 
 ```ts
 keywordSearch<T extends { title: string; why: string; howTo: string }>(
@@ -210,10 +210,10 @@ task:{id} | {title} | {why} | {howTo}
 
 1. `text`가 비면 `400`
 2. `prisma.task.findMany({ where: { isPublished: true } })`로 공개 지식 준비
-3. `keywordSearch`로 상위 후보를 최대 3개 고르고, 후보가 없으면 외부 호출 없이 폴백
-4. 후보만 지식으로 구성해 `askGemini(...)` 호출
-5. **`null`이면 폴백** — 같은 후보로 `mode: 'FALLBACK'`, `answer: null`, `confidence: 'UNKNOWN'`으로 응답. **절대 500을 내지 마세요.**
-6. 응답이 있으면 후보 ID 집합을 `knownIds`로 사용해 `verifyGrounding(ai.sourceIds, knownIds, ai.confidence)`
+3. 프로필이 있으면 `{ ...profile, zone: '' }`을 만들어 `matchesProfile`로 먼저 거릅니다. 차량·반려동물·학생 여부가 없으면 `false`로 봅니다
+4. 프로필에 맞는 전체 후보를 지식으로 구성해 `askGemini(...)` 호출. 후보가 없으면 외부 호출 없이 폴백
+5. **`null`이면 폴백** — 프로필에 맞는 후보 안에서 `keywordSearch`를 실행하고 `mode: 'FALLBACK'`, `answer: null`, `confidence: 'UNKNOWN'`으로 응답. **절대 500을 내지 마세요.**
+6. 응답이 있으면 프로필에 맞는 후보 ID 집합을 `knownIds`로 사용해 `verifyGrounding(ai.sourceIds, knownIds, ai.confidence)`
 7. `validSourceIds`에 해당하는 후보만 `tasks`에 담습니다 — 화면이 이걸 원문 카드로 렌더합니다
 8. **`confidence`가 `UNKNOWN`이면 `answer`를 `null`로 보내고, 그 외에는 서버 고정 안내를 보냅니다.** AI가 만든 문장은 화면에 띄우지 않습니다
 9. `Question`을 저장합니다 — `text`, `aiAnswer`, `sourceIds`(검증 통과분만), `confidence`, `ctxHousingType`, `ctxContractType`
@@ -222,6 +222,7 @@ task:{id} | {title} | {why} | {howTo}
 반환된 서버 고정 `answer`와 `confidence`를 API 응답 및 `Question.aiAnswer` 저장에 사용하고,
 카드와 저장할 근거는 `validSourceIds`에서 선택합니다. `ai.answer`를 직접 응답하거나 저장하지 않습니다.
 AI가 `GROUNDED`라고 했어도 서버 검증 후 `UNKNOWN`이면 `answer`는 반드시 `null`입니다.
+차량·반려동물·학생 여부는 필터에만 쓰고 DB 저장이나 Gemini 전송에는 포함하지 않습니다.
 
 **`askerId`는 채우지 마세요.** 9/28엔 로그인이 없어 nullable입니다.
 
@@ -237,7 +238,9 @@ AI가 `GROUNDED`라고 했어도 서버 검증 후 `UNKNOWN`이면 `answer`는 �
 
 - [ ] `npm test`에서 `grounding` 7건 · `search` 7건 통과
 - [ ] `curl -X POST /api/ask -d '{"text":"전입신고 언제까지 해야 해요?"}'` → `mode: "AI"`, `confidence: "GROUNDED"`, `tasks`에 전입신고
-- [ ] Gemini에는 키워드 상위 후보가 최대 3개만 전달되고 후보 밖 ID는 근거에서 제외된다
+- [ ] 원룸 프로필에는 기숙사 전용 카드가 나오지 않는다
+- [ ] Gemini에는 프로필에 맞는 전체 후보가 전달되고 프로필 밖 ID는 근거에서 제외된다
+- [ ] Gemini 실패 시에는 프로필에 맞는 할 일 안에서만 키워드 검색한다
 - [ ] **그 `answer`가 서버 고정 안내이고 AI가 만든 "14일" 같은 문장은 노출되지 않는다** ← 3층 방어 확인
 - [ ] 지식에 없는 걸 물으면 `confidence: "UNKNOWN"`, `answer: null`
 - [ ] **`GEMINI_API_KEY`를 빈 문자열로 두고 같은 요청을 보내면 `mode: "FALLBACK"`이 오고 500이 나지 않는다**
