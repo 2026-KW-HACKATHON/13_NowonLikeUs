@@ -691,12 +691,22 @@ button:active {
   transition: width 300ms ease;
 }
 
-.all-done {
+.next-helper {
   margin: 0 0 var(--space-6);
-  padding: var(--space-3);
+  padding: var(--space-4);
   border-left: 8px solid var(--accent);
   background: var(--accent-soft);
-  font-weight: 700;
+}
+
+.next-helper__title {
+  margin: 0 0 var(--space-1);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.next-helper__body {
+  margin: 0 0 var(--space-3);
 }
 
 /*
