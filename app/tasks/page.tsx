@@ -4,6 +4,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import Masthead from '@/components/Masthead';
+import NextHelper from '@/components/NextHelper';
 import TaskCard from '@/components/TaskCard';
 import { useProfile } from '@/lib/useProfile';
 import { useDone } from '@/lib/useDone';
@@ -124,9 +125,7 @@ export default function TasksPage() {
 
       {tasks.length === 0 && <p className="empty">해당하는 할 일이 없습니다.</p>}
 
-      {tasks.length > 0 && todo.length === 0 && (
-        <p className="all-done">해당하는 할 일을 모두 끝냈습니다.</p>
-      )}
+      {tasks.length > 0 && todo.length === 0 && <NextHelper />}
 
       {groups.map((group) => (
         <section key={group.category} className="group" data-category={group.category}>
