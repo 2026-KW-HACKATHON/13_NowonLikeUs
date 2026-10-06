@@ -28,6 +28,6 @@ export async function GET(request: Request) {
     select: questionSelect(viewer?.id ?? null),
   });
 
-  const response: QuestionListResponse = { questions: rows.map(toQuestionItem) };
+    const response: QuestionListResponse = { questions: rows.map((row) => toQuestionItem(row)) };
   return Response.json(response, { headers: { 'Cache-Control': 'no-store' } });
 }
