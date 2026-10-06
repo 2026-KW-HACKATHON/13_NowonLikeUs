@@ -9,9 +9,9 @@
 
 ## 이 역할의 핵심 문장
 
-**AI는 정보를 생성하지 않습니다.**
+**AI는 정보를 생성하지 않고, 보여줄 원문 카드만 고릅니다.**
 
-전입신고 기한을 AI가 잘못 말하면 사용자가 **실제로 과태료를 냅니다.** 그래서 이 파이프라인은 "똑똑하게 답하기"가 아니라 **"틀린 말을 못 하게 막기"** 가 목표입니다. AI가 할 일은 셋뿐입니다 — DB에 있는 할 일만 근거로 답하기, 근거가 없으면 모른다고 하기, 금액·기한은 아예 입에 올리지 않기.
+전입신고 기한을 AI가 잘못 말하면 사용자가 **실제로 과태료를 냅니다.** 그래서 이 파이프라인은 "똑똑하게 답하기"가 아니라 **"틀린 말을 못 하게 막기"** 가 목표입니다. AI가 할 일은 DB에 있는 원문 카드의 ID를 고르고 근거 신뢰도를 제안하는 것뿐입니다. AI가 만든 안내 문장은 사용자에게 보내거나 DB에 저장하지 않습니다.
 
 C가 만드는 것 중 **가장 중요한 건 `lib/grounding.ts`** 입니다. 이게 오정보 방어의 2층이고, 없으면 나머지가 다 의미 없습니다.
 
@@ -181,11 +181,14 @@ askGemini(question: string, knowledge: string, profileLine: string): Promise<Gem
 3. 금액, 기한, 날짜, 전화번호, 주소는 answer에 절대 쓰지 않는다.
    그 값들은 화면에서 원문 카드로 따로 보여준다.
    answer에는 "어떤 항목을 봐야 하는지"만 안내 문장으로 쓴다.
+   서버는 이 문장을 노출하지 않고 근거 검증 후 고정 안내로 교체한다.
 4. 근거로 쓴 항목의 id를 sourceIds에 그대로 넣는다. 지식에 없는 id를 만들지 않는다.
 5. answer는 두 문장 이내로 쓴다.
 ```
 
-**3번이 특히 중요합니다.** "과태료 5만원"을 AI가 문장으로 쓰게 하면 언젠가 틀립니다. **숫자가 AI를 통과하지 않으면 숫자는 틀리지 않습니다.** 화면은 AI 문장 아래에 DB 원문 카드를 그대로 붙입니다.
+**3번이 특히 중요합니다.** "과태료 5만원"을 AI가 문장으로 쓰게 하면 언젠가 틀립니다.
+그래서 화면과 저장소에는 AI 문장을 통과시키지 않고 서버의 고정 안내만 사용합니다.
+숫자와 상세 설명은 검증된 DB 원문 카드가 담당합니다.
 
 지식 블록은 한 줄에 한 항목입니다.
 
@@ -210,11 +213,11 @@ task:{id} | {title} | {why} | {howTo}
 4. **`null`이면 폴백** — `keywordSearch`로 항목을 찾아 `mode: 'FALLBACK'`, `answer: null`, `confidence: 'UNKNOWN'`으로 응답. **절대 500을 내지 마세요.**
 5. 응답이 있으면 `verifyGrounding(ai.sourceIds, knownIds, ai.confidence)`
 6. `validSourceIds`에 해당하는 `Task`만 골라 `tasks`에 담습니다 — 화면이 이걸 원문 카드로 렌더합니다
-7. **`confidence`가 `UNKNOWN`이면 `answer`를 `null`로 보냅니다.** 근거 없는 문장을 화면에 띄우지 않습니다
+7. **`confidence`가 `UNKNOWN`이면 `answer`를 `null`로 보내고, 그 외에는 서버 고정 안내를 보냅니다.** AI가 만든 문장은 화면에 띄우지 않습니다
 8. `Question`을 저장합니다 — `text`, `aiAnswer`, `sourceIds`(검증 통과분만), `confidence`, `ctxHousingType`, `ctxContractType`
 
 **구현 시 연결 규칙:** 5~7번은 `lib/grounding.ts`의 `groundAnswer(ai, knownIds)`로 함께 처리합니다.
-반환된 `answer`와 `confidence`를 API 응답 및 `Question.aiAnswer` 저장에 사용하고,
+반환된 서버 고정 `answer`와 `confidence`를 API 응답 및 `Question.aiAnswer` 저장에 사용하고,
 카드와 저장할 근거는 `validSourceIds`에서 선택합니다. `ai.answer`를 직접 응답하거나 저장하지 않습니다.
 AI가 `GROUNDED`라고 했어도 서버 검증 후 `UNKNOWN`이면 `answer`는 반드시 `null`입니다.
 
@@ -232,7 +235,7 @@ AI가 `GROUNDED`라고 했어도 서버 검증 후 `UNKNOWN`이면 `answer`는 �
 
 - [ ] `npm test`에서 `grounding` 7건 · `search` 7건 통과
 - [ ] `curl -X POST /api/ask -d '{"text":"전입신고 언제까지 해야 해요?"}'` → `mode: "AI"`, `confidence: "GROUNDED"`, `tasks`에 전입신고
-- [ ] **그 `answer` 문장에 "14일" 같은 숫자가 없다** ← 3층 방어 확인
+- [ ] **그 `answer`가 서버 고정 안내이고 AI가 만든 "14일" 같은 문장은 노출되지 않는다** ← 3층 방어 확인
 - [ ] 지식에 없는 걸 물으면 `confidence: "UNKNOWN"`, `answer: null`
 - [ ] **`GEMINI_API_KEY`를 빈 문자열로 두고 같은 요청을 보내면 `mode: "FALLBACK"`이 오고 500이 나지 않는다**
 

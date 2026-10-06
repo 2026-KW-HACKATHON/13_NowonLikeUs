@@ -42,24 +42,42 @@ describe('POST /api/ask', () => {
 
   it('허용 시에도 Google에 주거형태와 계약형태만 전달하고 검증된 근거만 저장한다', async () => {
     vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
-    fetchMock.mockResolvedValueOnce(ai('관련 항목을 확인해 주세요.', ['task:a', 'task:fake']));
+    fetchMock.mockResolvedValueOnce(ai('모델이 만든 임의의 안내입니다.', ['task:a', 'task:fake']));
     const response = await POST(request({ text: '전입신고는?', profile }));
-    expect(await response.json()).toMatchObject({ mode: 'AI', confidence: 'PARTIAL', tasks: [{ id: 'a' }] });
+    expect(await response.json()).toMatchObject({
+      mode: 'AI',
+      answer: '관련 항목의 원문 카드를 확인해 주세요.',
+      confidence: 'PARTIAL',
+      tasks: [{ id: 'a' }],
+    });
     const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
     const sent = JSON.parse(body.contents[0].parts[0].text);
     expect(sent.profileLine).toBe('주거형태: 원룸, 계약형태: 월세');
     expect(JSON.stringify(sent)).not.toContain('2026-10-01');
     expect(JSON.stringify(sent)).not.toContain('비공개 구역');
     expect(sent.profileLine).not.toMatch(/hasCar|hasPet|isStudent/);
-    expect(db.create.mock.calls[0][0].data).toMatchObject({ sourceIds: ['task:a'], confidence: 'PARTIAL', aiAnswer: '관련 항목을 확인해 주세요.' });
+    expect(db.create.mock.calls[0][0].data).toMatchObject({ sourceIds: ['task:a'], confidence: 'PARTIAL', aiAnswer: '관련 항목의 원문 카드를 확인해 주세요.' });
   });
 
-  it.each(['14일 안에 신고하세요.', '십사 일 안에 신고하세요.'])('수치 답변은 저장·응답하지 않고 원문 카드로 폴백한다: %s', async (answer) => {
+  it.each([
+    '14일 안에 신고하세요.',
+    '방 번호: 이사일',
+    '이번 주소 변경은 관련 문서를 확인하세요.',
+  ])('AI 문구 대신 서버의 고정 안내와 검증된 원문 카드만 저장·응답한다: %s', async (answer) => {
     vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
     fetchMock.mockResolvedValueOnce(ai(answer));
     const response = await POST(request({ text: '전입신고는?' }));
-    expect(await response.json()).toMatchObject({ mode: 'FALLBACK', answer: null, confidence: 'UNKNOWN', tasks: [{ id: 'a', daysLeft: null }] });
-    expect(db.create.mock.calls[0][0].data).toMatchObject({ aiAnswer: null, sourceIds: [], confidence: 'UNKNOWN' });
+    expect(await response.json()).toMatchObject({
+      mode: 'AI',
+      answer: '관련 항목의 원문 카드를 확인해 주세요.',
+      confidence: 'GROUNDED',
+      tasks: [{ id: 'a', daysLeft: null }],
+    });
+    expect(db.create.mock.calls[0][0].data).toMatchObject({
+      aiAnswer: '관련 항목의 원문 카드를 확인해 주세요.',
+      sourceIds: ['task:a'],
+      confidence: 'GROUNDED',
+    });
   });
 
   it.each([{ ids: ['task:fake'] }, { ids: [] }])('근거가 없으면 AI 문장과 근거를 저장하지 않는다: %j', async ({ ids }) => {

@@ -1,7 +1,6 @@
 import 'server-only';
 
 import type { Confidence } from '@/lib/types';
-import { hasNumericContent } from '@/lib/grounding';
 
 export interface GeminiAnswer {
   answer: string;
@@ -78,7 +77,7 @@ export async function askGemini(
       .join('');
     const value: unknown = JSON.parse(text);
     if (
-      !isRecord(value) || typeof value.answer !== 'string' || !value.answer.trim() || hasNumericContent(value.answer) ||
+      !isRecord(value) || typeof value.answer !== 'string' || !value.answer.trim() ||
       !Array.isArray(value.sourceIds) || !value.sourceIds.every((id: unknown) => typeof id === 'string') ||
       (value.confidence !== 'GROUNDED' && value.confidence !== 'PARTIAL' && value.confidence !== 'UNKNOWN')
     ) return null;

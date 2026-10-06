@@ -12,24 +12,11 @@ export type GroundedAnswer = Omit<GroundingResult, "confidence"> &
     | { confidence: Exclude<Confidence, "UNKNOWN">; answer: string }
   );
 
-/** 수치가 든 AI 문장은 폐기한다. DB 원문 카드에는 적용하지 않는다. */
-export function hasNumericContent(answer: string): boolean {
-  const text = answer.normalize("NFKC").replace(/\p{Cf}/gu, "");
-  return (
-    /\p{N}/u.test(text) ||
-    /(?:^|[^가-힣])(?:[영공일이삼사오육칠팔구십백천만억조]+|한|두|세|네|다섯|여섯|일곱|여덟|아홉|열|스무)\s*(?:개월|시간|퍼센트|만원|원|년|월|일|주|달|시|분|초|번|개|명|층|호|평|미터)/u.test(
-      text,
-    ) ||
-    /(?:^|[^가-힣])(?:하루|이틀|사흘|나흘|닷새|엿새|이레|여드레|아흐레|열흘)/u.test(
-      text,
-    )
-  );
-}
+const SAFE_GUIDANCE = "관련 항목의 원문 카드를 확인해 주세요.";
 
 /**
  * /api/ask의 응답 및 aiAnswer 저장에는 AI 원문 대신 이 결과를 사용한다.
- * AI의 자기 평가가 아닌 서버 검증 후 신뢰도를 기준으로 답변을 차단한다.
- * 이 함수는 근거 ID의 존재만 검증하며, 답변 내용의 정확성을 보장하지 않는다.
+ * 서버가 근거 ID와 신뢰도를 검증한 뒤 고정 안내만 생성한다.
  */
 export function groundAnswer(
   ai: { answer: string; sourceIds: string[]; confidence: Confidence },
@@ -37,7 +24,7 @@ export function groundAnswer(
 ): GroundedAnswer {
   const result = verifyGrounding(ai.sourceIds, known, ai.confidence);
 
-  if (result.confidence === "UNKNOWN" || hasNumericContent(ai.answer)) {
+  if (result.confidence === "UNKNOWN") {
     return {
       ...result,
       confidence: "UNKNOWN",
@@ -46,7 +33,7 @@ export function groundAnswer(
     };
   }
 
-  return { ...result, confidence: result.confidence, answer: ai.answer };
+  return { ...result, confidence: result.confidence, answer: SAFE_GUIDANCE };
 }
 
 /**
