@@ -809,11 +809,14 @@ button:disabled {
   outline: none;
 }
 
+/* 결과의 중심은 원문 카드다. 목록 화면의 묶음 제목과 같은 모양으로 둔다. */
 .ask-result__sub {
-  margin: var(--space-5) 0 var(--space-1);
+  margin: var(--space-5) 0 var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: 2px solid var(--rule);
   font-size: 16px;
   font-weight: 900;
-  color: var(--text-soft);
+  letter-spacing: -0.02em;
 }
 
 .answer {
@@ -837,9 +840,10 @@ button:disabled {
   font-weight: 700;
 }
 
+/* 서버 문장이 아니라 화면이 정한 한 줄 설명이라 크게 키우지 않는다. 배지가 먼저 읽힌다. */
 .answer__text {
-  margin: var(--space-2) 0 0;
-  font-size: 19px;
+  margin: var(--space-1) 0 0;
+  font-size: 17px;
   font-weight: 700;
 }
 
