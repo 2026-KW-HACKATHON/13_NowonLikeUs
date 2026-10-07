@@ -481,7 +481,11 @@ a {
 }
 
 /* 전화는 링크로 둔다. 번호를 옮겨 적다가 틀리는 걸 막는다. */
+/* 전화 걸기는 이 화면의 핵심 동작이다. 글자 높이만큼만 눌리면 손가락으로 맞히기 어렵다. */
 .tel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
   font-weight: 700;
   color: var(--accent);
 }
@@ -665,6 +669,12 @@ button:active {
   gap: var(--space-4);
   font-size: 16px;
   font-weight: 700;
+}
+
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
 }
 
 /* ---------- 진행률 · 완료 ---------- */
