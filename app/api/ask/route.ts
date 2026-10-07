@@ -8,6 +8,9 @@ import { keywordSearch } from '@/lib/search';
 import { toMatchedTask } from '@/lib/taskView';
 import type { AskResponse, Profile } from '@/lib/types';
 
+/** 한 번에 보여줄 원문 카드 수. AI 모드와 키워드 검색 모두 같다. */
+const MAX_TASKS = 3;
+
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
@@ -66,15 +69,20 @@ export async function POST(request: Request) {
       ? await askGemini(text, candidates.map((t) => `task:${t.id} | ${t.title} | ${t.why} | ${t.howTo}`).join('\n'),
         profile ? `주거형태: ${HOUSING_LABEL[profile.housingType]}, 계약형태: ${CONTRACT_LABEL[profile.contractType]}` : '')
       : null;
-    const grounded = ai ? groundAnswer(ai, new Set(candidates.map((t) => `task:${t.id}`))) : null;
+    const byId = new Map(candidates.map((t) => [`task:${t.id}`, t]));
+    const result = ai ? groundAnswer(ai, new Set(byId.keys())) : null;
+    // 서버 검증 후 UNKNOWN이면 AI 결과를 버리고 키워드 검색으로 넘어간다. DB에는 UNKNOWN과 빈 근거만 남는다.
+    const grounded = result && result.confidence !== 'UNKNOWN' ? result : null;
+    // AI가 고른 순서를 유지하고, 화면에 보여준 카드만 근거로 저장한다.
+    const sourceIds = grounded ? grounded.validSourceIds.slice(0, MAX_TASKS) : [];
     const selected = grounded
-      ? candidates.filter((t) => grounded.validSourceIds.includes(`task:${t.id}`))
-      : keywordSearch(candidates, text);
+      ? sourceIds.flatMap((id) => byId.get(id) ?? [])
+      : keywordSearch(candidates, text, MAX_TASKS);
     const answer = grounded?.answer ?? null;
     const confidence = grounded?.confidence ?? 'UNKNOWN';
     const question = await prisma.question.create({
       data: {
-        text, aiAnswer: answer, confidence, sourceIds: grounded?.validSourceIds ?? [],
+        text, aiAnswer: answer, confidence, sourceIds,
         askerId,
         ctxHousingType: profile?.housingType ?? null,
         ctxContractType: profile?.contractType ?? null,

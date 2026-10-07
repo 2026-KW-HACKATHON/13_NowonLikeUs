@@ -124,8 +124,8 @@ export interface AskRequest {
 /**
  * POST /api/ask 응답.
  *
- * `mode` 가 'FALLBACK' 이면 외부 전송 비활성화, 호출 실패 또는 수치 응답 차단으로
- * 키워드 검색을 사용한 것이다.
+ * `mode` 가 'FALLBACK' 이면 외부 전송 비활성화, 호출 실패, 또는 AI 근거 검증 결과가
+ * UNKNOWN 이어서 키워드 검색을 사용한 것이다.
  * 이때 `answer` 는 null 이고 `tasks` 에 관련 항목만 담긴다. 앱은 멈추지 않는다.
  *
  * `confidence` 가 'UNKNOWN' 이면 `answer` 는 null 이다.

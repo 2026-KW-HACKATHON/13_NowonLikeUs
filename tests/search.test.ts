@@ -18,7 +18,8 @@ describe('keywordSearch', () => {
   });
 
   it('조사 변형을 반복해도 같은 키워드의 점수를 중복 계산하지 않는다', () => {
-    expect(keywordSearch(items, '보증금 보증금을 보증금은 과태료').map((item) => item.id)).toEqual(['1', '2', '3']);
+    expect(keywordSearch(items, '보증금 보증금을 보증금은 임대차계약서').map((item) => item.id)).toEqual(['2']);
+    expect(keywordSearch(items, '확정일자 확정일자를 확정일자는 과태료').map((item) => item.id)).toEqual(['2']);
   });
 
   it('조사처럼 끝나는 원래 단어의 일치는 유지한다', () => {
@@ -47,7 +48,49 @@ describe('keywordSearch', () => {
   });
 
   it('일치하는 서로 다른 낱말이 많은 항목이 먼저 온다', () => {
-    expect(keywordSearch(items, '과태료 봉투').map((item) => item.id)).toEqual(['3', '1']);
+    expect(keywordSearch(items, '쓰레기 봉투 과태료 전입신고').map((item) => item.id)).toEqual(['3', '1']);
+  });
+
+  it('흔한 질문 표현은 키워드로 쓰지 않는다', () => {
+    const data = [{ id: 'x', title: '전월세 신고하기', why: '30일 안에 신고해야 합니다', howTo: '' }];
+    expect(keywordSearch(data, '인터넷 설치 하려면 어떻게 해야 하나요')).toEqual([]);
+    expect(keywordSearch(data, '어떻게 해야 하나요')).toEqual([]);
+  });
+
+  it('키워드가 여럿인 질문에서 하나만 걸렸으면 제목에 걸린 항목만 인정한다', () => {
+    const data = [
+      { id: 'tax', title: '월세 세액공제 챙기기', why: '', howTo: '임대차계약서와 전입신고 등록 확인' },
+      { id: 'pet', title: '반려견 동물등록하기', why: '', howTo: '' },
+    ];
+    expect(keywordSearch(data, '고양이 등록 어디서 하나요').map((item) => item.id)).toEqual(['pet']);
+    expect(keywordSearch(items, '확정일자 받는 곳').map((item) => item.id)).toEqual(['2']);
+  });
+
+  it('서술부는 의미 있는 키워드 수에 넣지 않아 본문 일치도 인정한다', () => {
+    expect(keywordSearch(items, '보증금 지키려면 뭐 해야 해요').map((item) => item.id)).toEqual(['2']);
+  });
+
+  it('조사가 붙은 한 글자 질문 표현도 키워드로 쓰지 않는다', () => {
+    const data = [{ id: 'move', title: '전입신고 하기', why: '이사 후 14일 안에', howTo: '' }];
+    expect(keywordSearch(data, '이사 하면 뭐부터').map((item) => item.id)).toEqual(['move']);
+    expect(keywordSearch(data, '뭐가 좋은 곳은')).toEqual([]);
+  });
+
+  it('한 글자 키워드는 우연히 겹친 제목으로 순위를 올리거나 혼자 걸린 항목을 인정하지 않는다', () => {
+    const data = [
+      { id: 'date', title: '확정일자 받기', why: '', howTo: '주민센터' },
+      { id: 'move', title: '전입신고 하기', why: '', howTo: '주민센터 신청' },
+    ];
+    expect(keywordSearch(data, '주민센터 신청 자').map((item) => item.id)).toEqual(['move', 'date']);
+    expect(keywordSearch([{ id: 'park', title: '주차 등록', why: '', howTo: '' }], '차 보험').map((item) => item.id)).toEqual([]);
+  });
+
+  it('점수가 같으면 제목에 걸린 키워드가 많은 항목이 먼저 온다', () => {
+    const data = [
+      { id: 'move', title: '전입신고 하기', why: '확정일자와 함께 해두세요', howTo: '' },
+      { id: 'date', title: '확정일자 받기', why: '', howTo: '' },
+    ];
+    expect(keywordSearch(data, '확정일자는 왜 받아야 돼요').map((item) => item.id)).toEqual(['date', 'move']);
   });
 
   it('일치하는 항목이 없으면 빈 배열이다', () => {
@@ -72,7 +115,7 @@ describe('keywordSearch', () => {
   });
 
   it('질문의 중복 키워드가 순위에 영향을 주지 않는다', () => {
-    expect(keywordSearch(items, '보증금 과태료 과태료').map((item) => item.id)).toEqual(['1', '2', '3']);
+    expect(keywordSearch(items, '전입신고 과태료 과태료 쓰레기').map((item) => item.id)).toEqual(['1', '3']);
   });
 
   it('같은 단어가 여러 필드에 있어도 한 번만 센다', () => {

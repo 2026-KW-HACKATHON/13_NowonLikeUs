@@ -204,11 +204,11 @@ task:{id} | {title} | {why} | {howTo}
 2. `prisma.task.findMany({ where: { isPublished: true } })`로 공개 지식 준비
 3. 프로필이 있으면 `{ ...profile, zone: '' }`을 만들어 `matchesProfile`로 먼저 거릅니다. 차량·반려동물·학생 여부가 없으면 `false`로 봅니다
 4. 프로필에 맞는 전체 후보를 지식으로 구성해 `askGemini(...)` 호출. 후보가 없으면 외부 호출 없이 폴백
-5. **`null`이면 폴백** — 프로필에 맞는 후보 안에서 `keywordSearch`를 실행하고 `mode: 'FALLBACK'`, `answer: null`, `confidence: 'UNKNOWN'`으로 응답. **절대 500을 내지 마세요.**
+5. **`null`이거나 6번 검증 결과가 `UNKNOWN`이면 폴백** — 프로필에 맞는 후보 안에서 `keywordSearch`를 실행하고 `mode: 'FALLBACK'`, `answer: null`, `confidence: 'UNKNOWN'`으로 응답. **절대 500을 내지 마세요.**
 6. 응답이 있으면 프로필에 맞는 후보 ID 집합을 `knownIds`로 사용해 `verifyGrounding(ai.sourceIds, knownIds, ai.confidence)`
-7. `validSourceIds`에 해당하는 후보만 `tasks`에 담습니다 — 화면이 이걸 원문 카드로 렌더합니다
+7. `validSourceIds`의 순서(AI가 고른 순서)대로 최대 3개만 `tasks`에 담습니다 — 화면이 이걸 원문 카드로 렌더합니다
 8. **`confidence`가 `UNKNOWN`이면 `answer`를 `null`로 보내고, 그 외에는 서버 고정 안내를 보냅니다.** 안내 문장은 서버에서만 생성합니다
-9. `Question`을 저장합니다 — `text`, `aiAnswer`, `sourceIds`(검증 통과분만), `confidence`, `ctxHousingType`, `ctxContractType`
+9. `Question`을 저장합니다 — `text`, `aiAnswer`, `sourceIds`(검증을 통과하고 화면에 보여준 것만), `confidence`, `ctxHousingType`, `ctxContractType`
 
 **구현 시 연결 규칙:** 6~8번은 `lib/grounding.ts`의 `groundAnswer(ai, knownIds)`로 함께 처리합니다.
 반환된 서버 고정 `answer`와 `confidence`를 API 응답 및 `Question.aiAnswer` 저장에 사용하고,

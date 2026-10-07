@@ -119,7 +119,7 @@ describe('POST /api/ask', () => {
     const response = await POST(request({ text: '분리수거 언제 해야 돼?', profile }));
 
     expect(await response.json()).toMatchObject({
-      mode: 'AI', answer: null, confidence: 'UNKNOWN', tasks: [],
+      mode: 'FALLBACK', answer: null, confidence: 'UNKNOWN', tasks: [{ id: 'one-room-waste' }],
     });
     const body = JSON.parse(fetchMock.mock.calls[0][1]?.body as string);
     const sent = JSON.parse(body.contents[0].parts[0].text);
@@ -220,11 +220,11 @@ describe('POST /api/ask', () => {
     });
   });
 
-  it.each([{ ids: ['task:fake'] }, { ids: [] }])('근거가 없으면 서버 안내와 근거를 저장하지 않는다: %j', async ({ ids }) => {
+  it.each([{ ids: ['task:fake'] }, { ids: [] }])('근거가 없으면 키워드 검색으로 넘어가고 서버 안내와 근거를 저장하지 않는다: %j', async ({ ids }) => {
     vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
     fetchMock.mockResolvedValueOnce(ai(ids));
-    expect(await (await POST(request({ text: '전입신고는?' }))).json()).toMatchObject({ mode: 'AI', answer: null, confidence: 'UNKNOWN', tasks: [] });
-    expect(db.create.mock.calls[0][0].data.aiAnswer).toBeNull();
+    expect(await (await POST(request({ text: '전입신고는?' }))).json()).toMatchObject({ mode: 'FALLBACK', answer: null, confidence: 'UNKNOWN', tasks: [{ id: 'a' }] });
+    expect(db.create.mock.calls[0][0].data).toMatchObject({ aiAnswer: null, sourceIds: [], confidence: 'UNKNOWN' });
   });
 
   it('AI가 UNKNOWN이라고 판단하면 실제 근거가 있어도 답변을 저장하지 않는다', async () => {
@@ -232,8 +232,20 @@ describe('POST /api/ask', () => {
     fetchMock.mockResolvedValueOnce(ai(['task:a'], 'UNKNOWN'));
     const response = await POST(request({ text: '전입신고' }));
     expect(response.headers.get('Cache-Control')).toBe('no-store');
-    expect(await response.json()).toMatchObject({ mode: 'AI', answer: null, confidence: 'UNKNOWN', tasks: [] });
-    expect(db.create.mock.calls[0][0].data).toMatchObject({ aiAnswer: null, sourceIds: [] });
+    expect(await response.json()).toMatchObject({ mode: 'FALLBACK', answer: null, confidence: 'UNKNOWN', tasks: [{ id: 'a' }] });
+    expect(db.create.mock.calls[0][0].data).toMatchObject({ aiAnswer: null, sourceIds: [], confidence: 'UNKNOWN' });
+  });
+
+  it('AI가 고른 순서대로 최대 3개만 보여주고, 보여준 카드만 근거로 저장한다', async () => {
+    vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
+    const tasks = ['t1', 't2', 't3', 't4'].map((id) => ({ ...task, id }));
+    db.findMany.mockResolvedValueOnce(tasks);
+    fetchMock.mockResolvedValueOnce(ai(['task:t4', 'task:t2', 'task:t1', 'task:t3']));
+
+    const response = await POST(request({ text: '전입신고' }));
+
+    expect((await response.json()).tasks.map((t: { id: string }) => t.id)).toEqual(['t4', 't2', 't1']);
+    expect(db.create.mock.calls[0][0].data).toMatchObject({ sourceIds: ['task:t4', 'task:t2', 'task:t1'], confidence: 'GROUNDED' });
   });
 
   it('공개 지식이 없으면 활성화 상태에서도 Google로 보내지 않는다', async () => {
