@@ -82,3 +82,18 @@ export function answerSlot(
   if (!session.loaded) return 'pending';
   return session.loggedIn ? 'form' : 'login';
 }
+
+/**
+ * 답변 옆 "맞아요" 자리에 버튼을 둘지, 개수만 둘지.
+ *
+ * - 로그인 안 했으면 개수만 (누르려면 로그인 — 답변 칸의 "로그인하고 답하기"가 안내한다)
+ * - 할 일로 정리된 질문이면 개수만 (확인 수가 더는 쓰일 곳이 없다)
+ * - 내가 쓴 답변이면 개수만 (서버도 403). 닉네임은 겹칠 수 있어 서버가 준 authoredByMe 로만 판단한다
+ */
+export function confirmSlot(
+  answer: Pick<AnswerItem, 'authoredByMe'>,
+  context: { loggedIn: boolean; status: QuestionStatus },
+): 'button' | 'count' {
+  if (!context.loggedIn || context.status === 'PROMOTED' || answer.authoredByMe) return 'count';
+  return 'button';
+}

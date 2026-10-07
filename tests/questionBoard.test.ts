@@ -1,11 +1,11 @@
 import { describe, it, expect } from 'vitest';
-import { answerSlot, askerContext, parseTab, timeAgo, withAnswer, withConfirm } from '@/lib/questionBoard';
+import { answerSlot, askerContext, confirmSlot, parseTab, timeAgo, withAnswer, withConfirm } from '@/lib/questionBoard';
 import type { AnswerItem, QuestionItem } from '@/lib/types';
 
 function answer(id: string, over: Partial<AnswerItem> = {}): AnswerItem {
   return {
     id, questionId: 'q1', authorNickname: '주민', text: id,
-    confirmationCount: 0, confirmedByMe: false, createdAt: '2026-10-06T00:00:00Z', ...over,
+    confirmationCount: 0, confirmedByMe: false, authoredByMe: false, createdAt: '2026-10-06T00:00:00Z', ...over,
   };
 }
 
@@ -134,5 +134,27 @@ describe('answerSlot', () => {
   it.each(['OPEN', 'ANSWERED'] as const)('%s: 로그인했으면 답변 양식, 아니면 로그인 안내', (status) => {
     expect(answerSlot(status, { loaded: true, loggedIn: true })).toBe('form');
     expect(answerSlot(status, { loaded: true, loggedIn: false })).toBe('login');
+  });
+});
+
+describe('confirmSlot', () => {
+  const mine = { authoredByMe: true };
+  const others = { authoredByMe: false };
+
+  it.each(['OPEN', 'ANSWERED'] as const)('%s: 로그인했고 남의 답변이면 버튼', (status) => {
+    expect(confirmSlot(others, { loggedIn: true, status })).toBe('button');
+  });
+
+  // 내 답변에 버튼을 두면 누를 때마다 403 이다. 처음부터 개수만 보여준다.
+  it('내가 쓴 답변은 개수만', () => {
+    expect(confirmSlot(mine, { loggedIn: true, status: 'ANSWERED' })).toBe('count');
+  });
+
+  it('로그인 안 했으면 개수만', () => {
+    expect(confirmSlot(others, { loggedIn: false, status: 'ANSWERED' })).toBe('count');
+  });
+
+  it('할 일로 정리된 질문은 개수만', () => {
+    expect(confirmSlot(others, { loggedIn: true, status: 'PROMOTED' })).toBe('count');
   });
 });

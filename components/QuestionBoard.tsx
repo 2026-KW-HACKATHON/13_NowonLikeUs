@@ -4,7 +4,7 @@ import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ANSWER_MAX, validateAnswer } from '@/lib/answerValidation';
 import { readApiError } from '@/lib/authView';
-import { QUESTION_TABS, answerSlot, askerContext, timeAgo, withAnswer, withConfirm } from '@/lib/questionBoard';
+import { QUESTION_TABS, answerSlot, askerContext, confirmSlot, timeAgo, withAnswer, withConfirm } from '@/lib/questionBoard';
 import { loadSession, useSession } from '@/lib/useSession';
 import type {
   AnswerItem,
@@ -156,8 +156,7 @@ function QuestionCard({
                 key={a.id}
                 answer={a}
                 now={now}
-                // 할 일로 정리된 뒤에는 확인 수가 쓰일 곳이 없다. 개수만 보여준다.
-                canConfirm={session.user !== null && q.status !== 'PROMOTED'}
+                canConfirm={confirmSlot(a, { loggedIn: session.user !== null, status: q.status }) === 'button'}
                 onConfirmed={onConfirmed}
               />
             ))}
@@ -213,6 +212,7 @@ function AnswerRow({
       <p className="answer-row__text">{a.text}</p>
       <div className="answer-row__foot">
         <span className="answer-row__by">
+          {a.authoredByMe && <span className="answer-row__mine">내 답변 · </span>}
           {a.authorNickname} · {timeAgo(a.createdAt, now)}
         </span>
         {canConfirm ? (

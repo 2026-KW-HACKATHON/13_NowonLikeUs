@@ -1276,3 +1276,9 @@ button:disabled {
   padding-left: var(--space-2);
   box-shadow: inset 4px 0 0 var(--accent);
 }
+
+/* 내가 쓴 답변 표시. "맞아요" 버튼이 왜 없는지 바로 알 수 있게. */
+.answer-row__mine {
+  font-weight: 700;
+  color: var(--accent);
+}
