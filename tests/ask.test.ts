@@ -89,6 +89,24 @@ describe('POST /api/ask', () => {
     expect(db.create.mock.calls[0][0].data).toMatchObject({ sourceIds: ['task:a'], confidence: 'PARTIAL', aiAnswer: '관련 항목의 원문 카드를 확인해 주세요.' });
   });
 
+  it('Gemini가 task: 접두어를 뺀 실제 ID를 돌려줘도 근거와 카드를 인정한다', async () => {
+    vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
+    fetchMock.mockResolvedValueOnce(ai(['a']));
+
+    const response = await POST(request({ text: '전입신고 언제까지 해요?', profile }));
+
+    expect(await response.json()).toMatchObject({
+      mode: 'AI',
+      answer: '관련 항목의 원문 카드를 확인해 주세요.',
+      confidence: 'GROUNDED',
+      tasks: [{ id: 'a' }],
+    });
+    expect(db.create.mock.calls[0][0].data).toMatchObject({
+      sourceIds: ['task:a'],
+      confidence: 'GROUNDED',
+    });
+  });
+
   it('프로필에 맞지 않는 Task ID는 근거로 인정하지 않는다', async () => {
     vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
     db.findMany.mockResolvedValueOnce([oneRoomWasteTask, dormWasteTask]);

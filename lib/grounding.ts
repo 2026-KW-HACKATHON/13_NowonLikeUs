@@ -45,7 +45,9 @@ export function verifyGrounding(
   known: Set<string>,
   aiConfidence: Confidence,
 ): GroundingResult {
-  const uniqueSourceIds = [...new Set(claimed)];
+  const uniqueSourceIds = [...new Set(claimed.map((id) =>
+    known.has(id) || !known.has(`task:${id}`) ? id : `task:${id}`,
+  ))];
   const validSourceIds = uniqueSourceIds.filter((id) => known.has(id));
   const droppedSourceIds = uniqueSourceIds.filter((id) => !known.has(id));
 
