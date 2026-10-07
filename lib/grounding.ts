@@ -15,11 +15,11 @@ export type GroundedAnswer = Omit<GroundingResult, "confidence"> &
 const SAFE_GUIDANCE = "관련 항목의 원문 카드를 확인해 주세요.";
 
 /**
- * /api/ask의 응답 및 aiAnswer 저장에는 AI 원문 대신 이 결과를 사용한다.
+ * /api/ask의 응답 및 aiAnswer 저장에는 AI가 고른 근거를 검증한 이 결과를 사용한다.
  * 서버가 근거 ID와 신뢰도를 검증한 뒤 고정 안내만 생성한다.
  */
 export function groundAnswer(
-  ai: { answer: string; sourceIds: string[]; confidence: Confidence },
+  ai: { sourceIds: string[]; confidence: Confidence },
   known: Set<string>,
 ): GroundedAnswer {
   const result = verifyGrounding(ai.sourceIds, known, ai.confidence);
@@ -45,7 +45,9 @@ export function verifyGrounding(
   known: Set<string>,
   aiConfidence: Confidence,
 ): GroundingResult {
-  const uniqueSourceIds = [...new Set(claimed)];
+  const uniqueSourceIds = [...new Set(claimed.map((id) =>
+    known.has(id) || !known.has(`task:${id}`) ? id : `task:${id}`,
+  ))];
   const validSourceIds = uniqueSourceIds.filter((id) => known.has(id));
   const droppedSourceIds = uniqueSourceIds.filter((id) => !known.has(id));
 

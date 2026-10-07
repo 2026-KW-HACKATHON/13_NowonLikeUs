@@ -48,8 +48,8 @@ const carOnlyTask: Task = {
 const profile = { housingType: 'ONE_ROOM', contractType: 'MONTHLY', moveInDate: '2026-10-01', zone: '비공개 구역', hasCar: true, hasPet: true, isStudent: true };
 const fetchMock = vi.fn<typeof fetch>();
 const request = (body: unknown) => new Request('http://localhost/api/ask', { method: 'POST', body: JSON.stringify(body) });
-const ai = (answer = '관련 항목을 확인해 주세요.', sourceIds = ['task:a'], confidence = 'GROUNDED') => Response.json({
-  candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({ answer, sourceIds, confidence }) }] } }],
+const ai = (sourceIds = ['task:a'], confidence = 'GROUNDED') => Response.json({
+  candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({ sourceIds, confidence }) }] } }],
 });
 
 beforeEach(() => {
@@ -76,7 +76,7 @@ describe('POST /api/ask', () => {
 
   it('허용 시에도 Google에 주거형태와 계약형태만 전달하고 검증된 근거만 저장한다', async () => {
     vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
-    fetchMock.mockResolvedValueOnce(ai('모델이 만든 임의의 안내입니다.', ['task:a', 'task:fake']));
+    fetchMock.mockResolvedValueOnce(ai(['task:a', 'task:fake']));
     const response = await POST(request({ text: '전입신고는?', profile }));
     expect(await response.json()).toMatchObject({
       mode: 'AI',
@@ -93,10 +93,28 @@ describe('POST /api/ask', () => {
     expect(db.create.mock.calls[0][0].data).toMatchObject({ sourceIds: ['task:a'], confidence: 'PARTIAL', aiAnswer: '관련 항목의 원문 카드를 확인해 주세요.' });
   });
 
+  it('Gemini가 task: 접두어를 뺀 실제 ID를 돌려줘도 근거와 카드를 인정한다', async () => {
+    vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
+    fetchMock.mockResolvedValueOnce(ai(['a']));
+
+    const response = await POST(request({ text: '전입신고 언제까지 해요?', profile }));
+
+    expect(await response.json()).toMatchObject({
+      mode: 'AI',
+      answer: '관련 항목의 원문 카드를 확인해 주세요.',
+      confidence: 'GROUNDED',
+      tasks: [{ id: 'a' }],
+    });
+    expect(db.create.mock.calls[0][0].data).toMatchObject({
+      sourceIds: ['task:a'],
+      confidence: 'GROUNDED',
+    });
+  });
+
   it('프로필에 맞지 않는 Task ID는 근거로 인정하지 않는다', async () => {
     vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
     db.findMany.mockResolvedValueOnce([oneRoomWasteTask, dormWasteTask]);
-    fetchMock.mockResolvedValueOnce(ai('관련 항목을 확인해 주세요.', ['task:dorm-waste']));
+    fetchMock.mockResolvedValueOnce(ai(['task:dorm-waste']));
 
     const response = await POST(request({ text: '분리수거 언제 해야 돼?', profile }));
 
@@ -130,7 +148,7 @@ describe('POST /api/ask', () => {
       title: index === 3 ? '종량제봉투 구매하기' : `생활 안내 ${index}`,
     }));
     db.findMany.mockResolvedValueOnce(rows);
-    fetchMock.mockResolvedValueOnce(ai('관련 항목을 확인해 주세요.', ['task:3']));
+    fetchMock.mockResolvedValueOnce(ai(['task:3']));
 
     const response = await POST(request({ text: '쓰레기봉투 어디서 사요?', profile }));
 
@@ -185,13 +203,9 @@ describe('POST /api/ask', () => {
     });
   });
 
-  it.each([
-    '14일 안에 신고하세요.',
-    '방 번호: 이사일',
-    '이번 주소 변경은 관련 문서를 확인하세요.',
-  ])('AI 문구 대신 서버의 고정 안내와 검증된 원문 카드만 저장·응답한다: %s', async (answer) => {
+  it('answer 없는 AI 선택 결과에도 서버의 고정 안내와 검증된 원문 카드만 저장·응답한다', async () => {
     vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
-    fetchMock.mockResolvedValueOnce(ai(answer));
+    fetchMock.mockResolvedValueOnce(ai());
     const response = await POST(request({ text: '전입신고는?' }));
     expect(await response.json()).toMatchObject({
       mode: 'AI',
@@ -206,16 +220,16 @@ describe('POST /api/ask', () => {
     });
   });
 
-  it.each([{ ids: ['task:fake'] }, { ids: [] }])('근거가 없으면 AI 문장과 근거를 저장하지 않는다: %j', async ({ ids }) => {
+  it.each([{ ids: ['task:fake'] }, { ids: [] }])('근거가 없으면 서버 안내와 근거를 저장하지 않는다: %j', async ({ ids }) => {
     vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
-    fetchMock.mockResolvedValueOnce(ai('관련 항목을 확인해 주세요.', ids));
+    fetchMock.mockResolvedValueOnce(ai(ids));
     expect(await (await POST(request({ text: '전입신고는?' }))).json()).toMatchObject({ mode: 'AI', answer: null, confidence: 'UNKNOWN', tasks: [] });
     expect(db.create.mock.calls[0][0].data.aiAnswer).toBeNull();
   });
 
   it('AI가 UNKNOWN이라고 판단하면 실제 근거가 있어도 답변을 저장하지 않는다', async () => {
     vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
-    fetchMock.mockResolvedValueOnce(ai('아직 확인되지 않은 내용입니다.', ['task:a'], 'UNKNOWN'));
+    fetchMock.mockResolvedValueOnce(ai(['task:a'], 'UNKNOWN'));
     const response = await POST(request({ text: '전입신고' }));
     expect(response.headers.get('Cache-Control')).toBe('no-store');
     expect(await response.json()).toMatchObject({ mode: 'AI', answer: null, confidence: 'UNKNOWN', tasks: [] });

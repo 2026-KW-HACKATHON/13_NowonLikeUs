@@ -6,20 +6,12 @@ const known = new Set(['task:a', 'task:b']);
 
 describe('groundAnswer', () => {
   it.each([
-    '14일 안에 신고하세요.',
-    '방 번호: 이사일',
-    '이번 주소 변경은 관련 문서를 확인하세요.',
-  ])('AI 문구와 무관하게 서버의 고정 안내만 사용한다: %s', (answer) => {
-    expect(groundAnswer({ answer, sourceIds: ['task:a'], confidence: 'GROUNDED' }, known).answer)
-      .toBe('관련 항목의 원문 카드를 확인해 주세요.');
-  });
-  it.each([
     { sourceIds: ['task:a'], confidence: 'UNKNOWN' as const },
     { sourceIds: ['task:fake'], confidence: 'GROUNDED' as const },
     { sourceIds: [], confidence: 'GROUNDED' as const },
     { sourceIds: ['task:fake'], confidence: 'PARTIAL' as const },
   ])('최종 UNKNOWN이면 원문 답변을 차단한다: %j', (ai) => {
-    const result = groundAnswer({ ...ai, answer: '근거 없는 안내입니다.' }, known);
+    const result = groundAnswer(ai, known);
 
     expect(result.confidence).toBe('UNKNOWN');
     expect(result.answer).toBeNull();
@@ -28,7 +20,6 @@ describe('groundAnswer', () => {
 
   it('검증된 GROUNDED 근거에는 서버의 고정 안내를 붙인다', () => {
     expect(groundAnswer({
-      answer: '모델이 만든 GROUNDED 안내입니다.',
       sourceIds: ['task:a'],
       confidence: 'GROUNDED',
     }, known)).toEqual({
@@ -41,7 +32,6 @@ describe('groundAnswer', () => {
 
   it('PARTIAL로 강등되면 고정 안내와 실제 근거만 유지한다', () => {
     expect(groundAnswer({
-      answer: '모델이 만든 PARTIAL 안내입니다.',
       sourceIds: ['task:a', 'task:fake'],
       confidence: 'GROUNDED',
     }, known)).toEqual({
