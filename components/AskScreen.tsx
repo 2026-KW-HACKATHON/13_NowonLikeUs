@@ -196,7 +196,8 @@ function AskResult({
       )}
 
       {view.kind === 'fallback' && (
-        <p className="answer answer--fallback">지금은 자동 답변을 드릴 수 없습니다. 관련 항목입니다.</p>
+        // AI 가 꺼졌을 때와 AI 가 "모름"이라고 했을 때 둘 다 온다(lib/askView.ts). 두 경우에 다 맞는 문장으로.
+        <p className="answer answer--fallback">확인된 답을 찾지 못했습니다. 관련 있어 보이는 항목입니다.</p>
       )}
 
       {view.kind === 'unknown' && (

@@ -14,7 +14,11 @@ export const ASK_MAX_LENGTH = 1000;
 export type AnswerView =
   /** AI 문장을 보여준다. 서버가 근거 id 를 확인한 경우만 */
   | { kind: 'answer'; confidence: 'GROUNDED' | 'PARTIAL'; text: string }
-  /** AI 없이 키워드로 찾은 카드만 보여준다 */
+  /**
+   * 확인된 근거 없이 키워드로 찾은 카드만 보여준다.
+   * AI 가 꺼졌거나 실패했을 때, 그리고 AI 가 "모름"이라고 판단했을 때(#48) 둘 다 여기로 온다.
+   * 응답으로는 둘을 구분할 수 없어서 화면 문구는 양쪽에 다 맞아야 한다.
+   */
   | { kind: 'fallback' }
   /** 보여줄 문장도 카드도 없다 — "아직 아무도 확인하지 않았습니다" */
   | { kind: 'unknown' };
