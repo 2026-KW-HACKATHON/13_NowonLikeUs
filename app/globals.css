@@ -1282,3 +1282,155 @@ button:disabled {
   font-weight: 700;
   color: var(--accent);
 }
+
+/* ---------- 승격 (운영자) ---------- */
+
+.queue-note {
+  margin: 0 0 var(--space-2);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.queue-count {
+  font-weight: 900;
+  color: var(--text);
+}
+
+.publish-notice {
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.publish-notice p {
+  margin: 0;
+}
+
+.publish-notice:focus,
+.editor__title:focus,
+.editor__error:focus {
+  outline: none;
+}
+
+/* 전역 button(꽉 찬 주 버튼)을 글자 링크처럼 되돌린다. .back 과 같은 모양. */
+.back-button {
+  width: auto;
+  min-height: 44px;
+  margin-bottom: var(--space-3);
+  padding: 0;
+  background: none;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.editor__title {
+  margin: 0 0 var(--space-3);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+/* 근거가 된 질문 · 답변. 양식을 쓰는 동안 계속 대조할 수 있게 위에 둔다. */
+.editor__source {
+  margin-bottom: var(--space-5);
+  padding: var(--space-3);
+  border: 1.5px solid var(--rule-soft);
+  border-radius: var(--radius);
+}
+
+.editor__label {
+  margin: 0 0 var(--space-1);
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--text-soft);
+}
+
+.editor__question {
+  margin: 0 0 var(--space-1);
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.editor__origin {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--border-control);
+  background: var(--surface);
+  font-size: 15px;
+}
+
+/* AI 초안은 노랑(일부만 확인됨 색)으로 — 아직 확인 전이라는 뜻을 색과 문장 둘 다로. */
+.editor__origin--ai {
+  border-left-color: var(--conf-partial);
+  background: var(--conf-partial-soft);
+  color: var(--conf-partial);
+  font-weight: 700;
+}
+
+.editor__textarea {
+  min-height: 96px;
+}
+
+.editor__hint {
+  margin: 0 0 var(--space-2);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.editor__sublabel {
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.editor__warn-hint {
+  color: var(--conf-partial);
+  font-weight: 700;
+}
+
+.editor__warn-input {
+  border-color: var(--conf-partial);
+  border-width: 3px;
+  padding: 0 12.5px;
+}
+
+.audience {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1.5px solid var(--rule-soft);
+  border-radius: var(--radius);
+  font-size: 16px;
+}
+
+/* 발행 전 마지막 확인. 체크박스가 작아도 문장 전체가 눌리게. */
+.confirm-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 var(--space-3);
+  padding: var(--space-3);
+  border: 2px solid var(--rule);
+  border-radius: var(--radius);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.confirm-check input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 4px;
+  accent-color: var(--accent);
+}
+
+.editor__error {
+  margin: 0 0 var(--space-3);
+}
