@@ -81,8 +81,12 @@ describe('keywordSearch', () => {
       { id: 'date', title: '확정일자 받기', why: '', howTo: '주민센터' },
       { id: 'move', title: '전입신고 하기', why: '', howTo: '주민센터 신청' },
     ];
-    expect(keywordSearch(data, '주민센터 신청 자').map((item) => item.id)).toEqual(['move', 'date']);
-    expect(keywordSearch([{ id: 'park', title: '주차 등록', why: '', howTo: '' }], '차 보험').map((item) => item.id)).toEqual([]);
+    expect(keywordSearch(data, '주민센터 신청 자').map((item) => item.id)).toEqual(['move']);
+    expect(keywordSearch([data[1], data[0]], '주민센터 자').map((item) => item.id)).toEqual(['date', 'move']);
+    const park = [{ id: 'park', title: '주차 등록', why: '', howTo: '' }];
+    expect(keywordSearch(park, '차 보험')).toEqual([]);
+    expect(keywordSearch(park, '차')).toEqual([]);
+    expect(keywordSearch(park, '차는?')).toEqual([]);
   });
 
   it('점수가 같으면 제목에 걸린 키워드가 많은 항목이 먼저 온다', () => {

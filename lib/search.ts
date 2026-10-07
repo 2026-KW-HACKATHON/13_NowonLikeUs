@@ -26,7 +26,7 @@ const PREDICATE = /(려면|으면|하면|려고|는데|니까|야|요|까)$/u;
  * 의미 있는 키워드가 둘 이상인 질문에서 하나만 걸린 항목은 제목에 걸렸을 때만 인정한다.
  * 서술부("지키려면")와 한 글자 키워드는 의미 있는 키워드 수에 넣지 않는다.
  * 두 글자 이상 키워드의 일치 수로 먼저 정렬하고, 같으면 제목에 걸린 키워드가 많은 항목을 먼저 둔다.
- * 한 글자 키워드의 일치는 마지막 동점 처리에만 쓴다.
+ * 한 글자 키워드는 혼자서 항목을 찾지 못하고, 일치는 마지막 동점 처리에만 쓴다.
  * 결과는 관련 항목 후보일 뿐, 답변의 근거나 신뢰도를 확정하지 않는다.
  */
 export function keywordSearch<
@@ -48,8 +48,6 @@ export function keywordSearch<
     stem: word.replace(new RegExp(`^([가-힣]{2,}?)${PARTICLE}$`, 'u'), '$1'),
   })).filter(({ word, stem }) => !STOPWORDS.has(word) && !STOPWORDS.has(stem) && !SHORT_STOPWORDS.test(word));
 
-  const keywordCount = new Set(keywords.map(({ stem }) => stem)).size;
-
   // 서술부와 한 글자 키워드는 뜻이 약해 "키워드가 둘 이상인 질문"을 판단할 때 세지 않는다.
   const meaningfulCount = new Set(keywords
     .filter(({ word, stem }) => stem.length > 1 && !PREDICATE.test(word))
@@ -70,9 +68,8 @@ export function keywordSearch<
 
       return { item, score, strongScore, titleScore };
     })
-    // 하나만 걸렸으면 키워드가 하나뿐인 질문이거나, 두 글자 이상 키워드가 의미 있는 키워드 하나뿐이거나 제목에 걸려야 한다.
-    .filter(({ score, strongScore, titleScore }) => score > 1 || (score === 1
-      && (keywordCount === 1 || (strongScore === 1 && (meaningfulCount <= 1 || titleScore > 0)))))
+    // 인정 여부는 두 글자 이상 키워드로만 정한다. 하나만 걸렸으면 의미 있는 키워드가 하나뿐인 질문이거나 제목에 걸려야 한다.
+    .filter(({ strongScore, titleScore }) => strongScore > 1 || (strongScore === 1 && (meaningfulCount <= 1 || titleScore > 0)))
     .sort((a, b) => b.strongScore - a.strongScore || b.titleScore - a.titleScore || b.score - a.score)
     .slice(0, Math.floor(limit))
     .map(({ item }) => item);
