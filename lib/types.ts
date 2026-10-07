@@ -226,6 +226,12 @@ export interface AnswerItem {
   confirmationCount: number;
   /** 지금 로그인한 사람이 이미 눌렀는가. 로그인하지 않았으면 false. */
   confirmedByMe: boolean;
+  /**
+   * 지금 로그인한 사람이 쓴 답변인가. 로그인하지 않았으면 false.
+   * 화면은 내 답변에 "맞아요" 버튼 대신 개수만 보여준다(누르면 403).
+   * 닉네임은 겹칠 수 있어 화면에서 비교하지 않고, 작성자 id 는 내려주지 않는다.
+   */
+  authoredByMe: boolean;
   createdAt: string;
 }
 

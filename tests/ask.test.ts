@@ -2,8 +2,10 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import type { Task } from '@prisma/client';
 
 vi.mock('server-only', () => ({}));
-const db = vi.hoisted(() => ({ findMany: vi.fn(), create: vi.fn() }));
-vi.mock('@/lib/db', () => ({ prisma: { task: { findMany: db.findMany }, question: { create: db.create } } }));
+const db = vi.hoisted(() => ({ findMany: vi.fn(), create: vi.fn(), findUser: vi.fn() }));
+vi.mock('@/lib/db', () => ({ prisma: { task: { findMany: db.findMany }, question: { create: db.create }, user: { findUnique: db.findUser } } }));
+const session = vi.hoisted(() => ({ getSessionUser: vi.fn() }));
+vi.mock('@/lib/auth', () => ({ getSessionUser: session.getSessionUser }));
 import { POST } from '@/app/api/ask/route';
 
 const task: Task = {
@@ -56,6 +58,8 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   db.findMany.mockResolvedValue([task]);
   db.create.mockResolvedValue({ id: 'q-test' });
+  session.getSessionUser.mockResolvedValue(null);
+  db.findUser.mockImplementation(({ where }: { where: { id: string } }) => Promise.resolve({ id: where.id }));
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.resetAllMocks(); });
 
@@ -67,7 +71,7 @@ describe('POST /api/ask', () => {
     expect(await response.json()).toMatchObject({ mode: 'FALLBACK', answer: null, confidence: 'UNKNOWN', questionId: 'q-test', tasks: [{ id: 'a', why: '14일 이내 신고' }] });
     expect(fetchMock).not.toHaveBeenCalled();
     expect(db.findMany).toHaveBeenCalledWith({ where: { isPublished: true } });
-    expect(db.create.mock.calls[0][0].data).toEqual({ text: '전입신고는?', aiAnswer: null, sourceIds: [], confidence: 'UNKNOWN', ctxHousingType: 'ONE_ROOM', ctxContractType: 'MONTHLY' });
+    expect(db.create.mock.calls[0][0].data).toEqual({ text: '전입신고는?', aiAnswer: null, sourceIds: [], confidence: 'UNKNOWN', ctxHousingType: 'ONE_ROOM', ctxContractType: 'MONTHLY', askerId: null });
   });
 
   it('허용 시에도 Google에 주거형태와 계약형태만 전달하고 검증된 근거만 저장한다', async () => {
@@ -261,5 +265,38 @@ describe('POST /api/ask', () => {
     const response = await POST(request({ text: '전입신고' }));
     expect(response.status).toBe(503);
     expect(await response.text()).not.toContain('private');
+  });
+  // 질문자 기록: 로그인했으면 자체 DB 에만 남기고, 외부 AI 요청에는 넣지 않는다.
+  it('로그인한 사용자의 질문은 askerId 를 저장한다', async () => {
+    session.getSessionUser.mockResolvedValue({ id: 'user-1', nickname: '주민', role: 'MEMBER' });
+    const response = await POST(request({ text: '전입신고는?' }));
+    expect(response.status).toBe(200);
+    expect(db.create.mock.calls[0][0].data.askerId).toBe('user-1');
+  });
+
+  it('세션을 읽지 못해도 질문은 받고 askerId 는 null 이다', async () => {
+    session.getSessionUser.mockRejectedValue(new Error('SESSION_SECRET 없음'));
+    const response = await POST(request({ text: '전입신고는?' }));
+    expect(response.status).toBe(200);
+    expect(db.create.mock.calls[0][0].data.askerId).toBeNull();
+  });
+
+  it('askerId · 닉네임은 외부 AI 요청에 실리지 않는다', async () => {
+    vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
+    session.getSessionUser.mockResolvedValue({ id: 'user-secret-id', nickname: '비밀닉네임', role: 'MEMBER' });
+    fetchMock.mockResolvedValue(ai());
+    await POST(request({ text: '전입신고는?' }));
+    const sent = String(fetchMock.mock.calls[0][1]?.body);
+    expect(sent).not.toContain('user-secret-id');
+    expect(sent).not.toContain('비밀닉네임');
+    expect(db.create.mock.calls[0][0].data.askerId).toBe('user-secret-id');
+  });
+  // 지운 계정의 쿠키가 남아 있으면 askerId 외래키 위반으로 질문 전체가 503 이 된다. 로그인 없이 쓰는 기능이라 막히면 안 된다.
+  it('지운 계정의 쿠키가 남아 있으면 askerId 는 null 이고 질문은 200 이다', async () => {
+    session.getSessionUser.mockResolvedValue({ id: 'deleted-user', nickname: '탈퇴', role: 'MEMBER' });
+    db.findUser.mockResolvedValue(null);
+    const response = await POST(request({ text: '전입신고는?' }));
+    expect(response.status).toBe(200);
+    expect(db.create.mock.calls[0][0].data.askerId).toBeNull();
   });
 });

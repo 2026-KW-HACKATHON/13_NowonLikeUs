@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { DUE_OFFSET_MAX, sortQueue, totalConfirmations, validatePromoteRequest } from '@/lib/promotion';
+import { DUE_OFFSET_MAX, sortQueue, totalConfirmations, validatePromoteRequest, withObject, withTopic } from '@/lib/promotion';
 import type { PromotionQueueItem, QuestionItem, TaskDraft } from '@/lib/types';
 
 const draft: TaskDraft = {
@@ -127,5 +127,25 @@ describe('sortQueue', () => {
     const items = makeItems();
     sortQueue(items);
     expect(items.map((i) => i.question.id)).toEqual(['a', 'b', 'c']);
+  });
+});
+
+// 오류 문장은 화면에 그대로 뜬다. "출처을(를)" 처럼 어색하지 않게 받침에 맞는 조사를 붙인다.
+describe('조사', () => {
+  it('받침에 따라 을/를, 은/는 을 고른다', () => {
+    expect(withObject('출처')).toBe('출처를');
+    expect(withObject('제목')).toBe('제목을');
+    expect(withObject('안 하면 생기는 일')).toBe('안 하면 생기는 일을');
+    expect(withTopic('주소')).toBe('주소는');
+    expect(withTopic('하는 방법')).toBe('하는 방법은');
+  });
+
+  it('검증 오류 문장에 어색한 "을(를)" · "은(는)" 이 없다', () => {
+    const empty = validatePromoteRequest({ ...ok, sourceNote: '' });
+    expect(!empty.ok && empty.error).toBe('출처를 입력해 주세요.');
+    const title = validatePromoteRequest({ ...ok, task: { ...draft, title: ' ' } });
+    expect(!title.ok && title.error).toBe('제목을 입력해 주세요.');
+    const long = validatePromoteRequest({ ...ok, task: { ...draft, placeAddress: '가'.repeat(201) } });
+    expect(!long.ok && long.error).toBe('주소는 200자 이하로 입력해 주세요.');
   });
 });

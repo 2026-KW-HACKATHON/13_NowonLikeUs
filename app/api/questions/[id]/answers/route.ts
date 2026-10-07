@@ -38,6 +38,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
     return answer;
   });
 
-  const response: CreateAnswerResponse = { answer: toAnswerItem(created) };
+  // 방금 내가 쓴 답변이므로 authoredByMe 는 항상 true 다.
+  const response: CreateAnswerResponse = { answer: toAnswerItem(created, auth.id) };
   return Response.json(response, { status: 201 });
 }
