@@ -154,6 +154,7 @@ export default function TasksPage() {
 
       <nav className="nav">
         <Link href="/ask">궁금한 게 있나요? 질문하기</Link>
+        <Link href="/questions">이웃의 질문에 답하기</Link>
         <Link href="/setup">상황 다시 입력하기</Link>
       </nav>
     </main>

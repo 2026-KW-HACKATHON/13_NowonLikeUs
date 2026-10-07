@@ -196,6 +196,15 @@ a {
   margin-bottom: var(--space-5);
 }
 
+.masthead__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  width: 100%;
+}
+
 .masthead__brand {
   margin: 0;
   font-size: 19px;
@@ -993,4 +1002,283 @@ button:disabled {
   min-height: 44px;
   line-height: 44px;
   font-weight: 700;
+}
+
+/* ---------- 로그인 상태 (제호 오른쪽) ---------- */
+
+/* 확인 전에도 자리를 잡아 둬서, 닉네임이 들어올 때 제호가 흔들리지 않게 한다. */
+.account {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.account__link {
+  font-weight: 700;
+}
+
+.account__name {
+  font-weight: 700;
+}
+
+/* 전역 button 은 꽉 찬 주 버튼이다. 여기서는 글자 링크처럼 보이게 되돌린다. */
+.account__logout {
+  width: auto;
+  min-height: 44px;
+  padding: 0 var(--space-1);
+  background: none;
+  color: var(--text-soft);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.account__logout:disabled {
+  background: none;
+  color: var(--text-soft);
+}
+
+/* 보조 버튼: 주 버튼과 같은 크기, 테두리만. 한 화면에 주 버튼이 여러 개 생기지 않게. */
+.secondary-button {
+  background: var(--surface);
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+
+.secondary-button:disabled {
+  background: var(--surface);
+  color: var(--text-soft);
+  border-color: var(--border-control);
+}
+
+/* ---------- 이웃의 질문 ---------- */
+
+/* 좁은 화면에서는 가로 스크롤 대신 줄을 바꾼다. 숨은 탭이 생기면 있는 줄도 모른다. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-1);
+  margin-bottom: var(--space-4);
+  border-bottom: 2px solid var(--rule);
+}
+
+.tabs__item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 var(--space-2);
+  margin-bottom: -2px;
+  border-bottom: 4px solid transparent;
+  color: var(--text-soft);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* 지금 탭은 색만이 아니라 굵은 밑줄로도 구분한다. */
+.tabs__item[aria-current="page"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.qlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.qcard {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.qcard__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin-bottom: var(--space-1);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.qcard__state {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.qcard__state--promoted {
+  border: 1.5px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.qcard__text {
+  margin: 0 0 var(--space-1);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+}
+
+.qcard__context {
+  margin: 0 0 var(--space-3);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.qcard__closed,
+.qcard__sent {
+  margin: var(--space-2) 0;
+  font-size: 16px;
+  color: var(--text-soft);
+}
+
+.qcard__login {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  font-weight: 700;
+}
+
+/* 주민 답변은 확인 전 정보라 할 일 카드(색띠)와 다르게 보여야 한다. 회색 세로줄로 "인용"처럼. */
+.answers {
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.answers__label {
+  margin: 0 0 var(--space-1);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.answers__caveat {
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+.answers__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.answer-row {
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-left: 4px solid var(--border-control);
+  background: var(--surface);
+}
+
+.answer-row__text {
+  margin: 0 0 var(--space-1);
+  white-space: pre-line;
+}
+
+.answer-row__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+.answer-row__by {
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.confirm {
+  width: auto;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1.5px solid var(--border-control);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 내가 누른 상태는 색과 ✓ 기호 둘 다로 알린다. */
+.confirm[aria-pressed="true"],
+.confirm[aria-pressed="true"]:disabled {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: default;
+}
+
+.confirm--static {
+  display: inline-flex;
+  align-items: center;
+  min-height: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-soft);
+}
+
+.answer-form {
+  margin-top: var(--space-3);
+}
+
+.answer-form__input {
+  min-height: 120px;
+}
+
+.answer-form__actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-2);
+}
+
+/* ---------- 다음 동선 (질문 결과 · 다 끝낸 사람) ---------- */
+
+.ask-next {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--accent);
+  background: var(--accent-soft);
+  font-size: 16px;
+}
+
+.ask-next a {
+  font-weight: 700;
+}
+
+.next-helper__actions {
+  display: grid;
+  gap: var(--space-1);
+}
+
+/* 주 버튼 옆의 두 번째 선택지. 같은 크기, 테두리만. */
+.button-link--secondary {
+  background: var(--surface);
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+
+/* 링크로 찾아온 질문은 왼쪽 띠로 표시한다. 초점은 옮기되 테두리는 그리지 않는다(Tab 순서에 없는 칸). */
+.qcard:focus {
+  outline: none;
+}
+
+.qcard--target {
+  padding-left: var(--space-2);
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+/* 내가 쓴 답변 표시. "맞아요" 버튼이 왜 없는지 바로 알 수 있게. */
+.answer-row__mine {
+  font-weight: 700;
+  color: var(--accent);
 }
