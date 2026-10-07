@@ -1,6 +1,7 @@
 import { describe, it, expect } from 'vitest';
 import { askProfile, describeAnswer } from '@/lib/askView';
-import type { AskResponse, MatchedTask, Profile } from '@/lib/types';
+import { matchesProfile } from '@/lib/matching';
+import type { AskResponse, MatchedTask, Profile, TaskConditions } from '@/lib/types';
 
 const card: MatchedTask = {
   id: 't1',
@@ -64,22 +65,39 @@ describe('askProfile', () => {
     contractType: 'MONTHLY',
     moveInDate: '2026-09-20',
     hasCar: true,
-    hasPet: true,
+    hasPet: false,
     isStudent: true,
   };
 
-  it('주거형태 · 계약형태 · 이사일만 보낸다', () => {
+  it('거르기에 필요한 값과 이사일을 보낸다', () => {
     expect(askProfile(profile)).toEqual({
       housingType: 'ONE_ROOM',
       contractType: 'MONTHLY',
       moveInDate: '2026-09-20',
+      hasCar: true,
+      hasPet: false,
+      isStudent: true,
     });
   });
 
-  it('구역 · 차량 · 반려동물 · 학생 여부는 보내지 않는다', () => {
-    const keys = Object.keys(askProfile(profile));
-    for (const field of ['zone', 'hasCar', 'hasPet', 'isStudent']) {
-      expect(keys).not.toContain(field);
+  it('쓰는 곳이 없는 구역은 보내지 않는다', () => {
+    expect(Object.keys(askProfile(profile))).not.toContain('zone');
+  });
+
+  // 서버는 받은 값으로 matchesProfile 을 돌린다. 보낸 값만으로 목록 화면과 같은 판정이 나와야
+  // 질문 결과와 할 일 목록이 서로 다른 카드를 보여주지 않는다. 필드가 빠지면 여기서 걸린다.
+  it('보낸 값만으로 목록 화면과 같은 필터 판정이 나온다', () => {
+    const sent = { ...askProfile(profile), zone: '' };
+    const conditions: TaskConditions[] = [
+      { housingTypes: ['DORM'], contractTypes: [], requiresCar: false, requiresPet: false, studentOnly: false },
+      { housingTypes: [], contractTypes: ['JEONSE'], requiresCar: false, requiresPet: false, studentOnly: false },
+      { housingTypes: [], contractTypes: [], requiresCar: true, requiresPet: false, studentOnly: false },
+      { housingTypes: [], contractTypes: [], requiresCar: false, requiresPet: true, studentOnly: false },
+      { housingTypes: [], contractTypes: [], requiresCar: false, requiresPet: false, studentOnly: true },
+      { housingTypes: ['ONE_ROOM'], contractTypes: ['MONTHLY'], requiresCar: false, requiresPet: false, studentOnly: false },
+    ];
+    for (const c of conditions) {
+      expect(matchesProfile(c, sent)).toBe(matchesProfile(c, profile));
     }
   });
 });

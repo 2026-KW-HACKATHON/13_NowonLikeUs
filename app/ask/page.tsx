@@ -170,16 +170,22 @@ function AskResult({
   return (
     <>
       <h2 ref={headingRef} tabIndex={-1} className="ask-result__title">
-        답변
+        결과
       </h2>
 
+      {/*
+        서버는 근거가 확인되면 AI 문장 대신 늘 같은 고정 안내("관련 항목의 원문 카드를 확인해 주세요")를
+        준다(#31). 그 문장을 그대로 띄우면 GROUNDED 와 PARTIAL 이 같은 말이 되므로,
+        신뢰도별 설명은 화면이 정하고 결과의 중심은 아래 원문 카드에 둔다.
+      */}
       {view.kind === 'answer' && (
         <div className={`answer answer--${view.confidence.toLowerCase()}`}>
           <ConfidenceBadge confidence={view.confidence} />
-          <p className="answer__text">{view.text}</p>
-          {view.confidence === 'PARTIAL' && (
-            <p className="answer__hint">일부만 확인된 답변입니다. 아래 원문 카드에서 직접 확인하세요.</p>
-          )}
+          <p className="answer__text">
+            {view.confidence === 'GROUNDED'
+              ? '질문과 관련해 확인된 항목을 찾았습니다.'
+              : '관련 항목 중 일부만 확인됐습니다. 카드가 질문과 맞는지 직접 확인하세요.'}
+          </p>
         </div>
       )}
 
@@ -200,7 +206,7 @@ function AskResult({
       {res.tasks.length > 0 && (
         <>
           <h3 className="ask-result__sub">
-            {view.kind === 'answer' ? '근거가 된 항목' : '관련 있어 보이는 항목'}
+            {view.kind === 'answer' ? '확인된 항목' : '관련 있어 보이는 항목'} {res.tasks.length}건
           </h3>
           {res.tasks.map((task) => (
             <TaskCard key={task.id} task={task} />
