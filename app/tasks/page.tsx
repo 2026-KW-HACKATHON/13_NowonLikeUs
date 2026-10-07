@@ -3,39 +3,20 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import Masthead from '@/components/Masthead';
+import NextHelper from '@/components/NextHelper';
 import TaskCard from '@/components/TaskCard';
 import { useProfile } from '@/lib/useProfile';
 import { useDone } from '@/lib/useDone';
 import { progressPercent, splitByDone } from '@/lib/progress';
-import {
-  CATEGORY_LABEL,
-  CONTRACT_LABEL,
-  HOUSING_LABEL,
-  heroLabel,
-  moveInLabel,
-} from '@/lib/labels';
+import { CATEGORY_LABEL, heroLabel } from '@/lib/labels';
 import { groupByCategory, pickUrgent } from '@/lib/taskGroups';
-import type { MatchResponse, MatchedTask, Profile } from '@/lib/types';
+import type { MatchResponse, MatchedTask } from '@/lib/types';
 
 type State =
   | { kind: 'loading' }
   | { kind: 'ready'; tasks: MatchedTask[] }
   | { kind: 'failed' };
-
-/** 제호와 지금 보고 있는 조건. 어떤 상태에서도 화면 맨 위에 똑같이 붙는다. */
-function Masthead({ profile }: { profile: Profile | null }) {
-  return (
-    <header className="masthead">
-      <p className="masthead__brand">월계는 처음이라</p>
-      {profile && (
-        <p className="masthead__meta">
-          {HOUSING_LABEL[profile.housingType]} · {CONTRACT_LABEL[profile.contractType]} ·{' '}
-          {moveInLabel(profile.moveInDate)} 이사
-        </p>
-      )}
-    </header>
-  );
-}
 
 export default function TasksPage() {
   const router = useRouter();
@@ -144,9 +125,7 @@ export default function TasksPage() {
 
       {tasks.length === 0 && <p className="empty">해당하는 할 일이 없습니다.</p>}
 
-      {tasks.length > 0 && todo.length === 0 && (
-        <p className="all-done">해당하는 할 일을 모두 끝냈습니다.</p>
-      )}
+      {tasks.length > 0 && todo.length === 0 && <NextHelper />}
 
       {groups.map((group) => (
         <section key={group.category} className="group" data-category={group.category}>
@@ -174,6 +153,7 @@ export default function TasksPage() {
       )}
 
       <nav className="nav">
+        <Link href="/ask">궁금한 게 있나요? 질문하기</Link>
         <Link href="/setup">상황 다시 입력하기</Link>
       </nav>
     </main>
