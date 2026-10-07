@@ -28,15 +28,17 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!question) return error('없는 질문입니다.', 404);
   if (question.status === 'PROMOTED') return error('이미 할 일로 정리된 질문입니다.', 409);
 
-  const created = await prisma.$transaction(async (tx) => {
-    const answer = await tx.answer.create({
+  // 중간에 분기가 없어서 배치 트랜잭션으로 한 번에 보낸다. 둘 중 하나가 실패하면 둘 다 되돌아간다.
+  // 인터랙티브 트랜잭션(async (tx) => ...)은 쿼리마다 DB 를 오가서, 한국 → us-east-2 왕복이 쌓이면
+  // 기본 제한 5초를 넘겨 500("Transaction not found")이 났다.
+  const [created] = await prisma.$transaction([
+    prisma.answer.create({
       data: { questionId: id, authorId: auth.id, text: input.value.text },
       select: answerSelect(auth.id),
-    });
+    }),
     // 조건부 갱신이라 동시에 여러 답변이 달려도 결과가 같다. 이미 ANSWERED 면 그대로 둔다.
-    await tx.question.updateMany({ where: { id, status: 'OPEN' }, data: { status: 'ANSWERED' } });
-    return answer;
-  });
+    prisma.question.updateMany({ where: { id, status: 'OPEN' }, data: { status: 'ANSWERED' } }),
+  ]);
 
   // 방금 내가 쓴 답변이므로 authoredByMe 는 항상 true 다.
   const response: CreateAnswerResponse = { answer: toAnswerItem(created, auth.id) };

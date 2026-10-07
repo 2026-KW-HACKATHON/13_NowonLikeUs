@@ -8,6 +8,12 @@ function error(message: string, status: number) {
   return Response.json(body, { status });
 }
 
+/**
+ * 인터랙티브 트랜잭션 시간 여유. 기본값(대기 2초 · 실행 5초)으로는 한국 → us-east-2 왕복이 쌓여
+ * 시간 초과 500("Transaction not found")이 났다. 승격은 시연의 핵심 장면이라 넉넉히 준다.
+ */
+const TX_OPTIONS = { maxWait: 10_000, timeout: 15_000 } as const;
+
 /** 트랜잭션 안에서 승격할 수 없는 상태일 때 던지고, 바깥에서 응답 코드로 바꾼다. */
 class NotPromotable extends Error {
   constructor(readonly status: 404 | 409, message: string) {
@@ -38,7 +44,7 @@ export async function POST(request: Request) {
   try {
     const created = await prisma.$transaction(async (tx) => {
       const moved = await tx.question.updateMany({
-                // 보이는 답변이 하나도 없으면 갱신되지 않아 409(답변 없음)로 나간다.
+        // 보이는 답변이 하나도 없으면 갱신되지 않아 409(답변 없음)로 나간다.
         where: { id: questionId, status: 'ANSWERED', answers: { some: { isHidden: false } } },
         data: { status: 'PROMOTED' },
       });
@@ -63,7 +69,7 @@ export async function POST(request: Request) {
         },
         select: { id: true },
       });
-    });
+    }, TX_OPTIONS);
 
     const response: PromoteResponse = { taskId: created.id };
     return Response.json(response, { status: 201 });
