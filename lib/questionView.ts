@@ -11,6 +11,7 @@ export const QUESTION_STATUSES: readonly QuestionStatus[] = ['OPEN', 'ANSWERED',
  * 질문 + 답변 select. 숨긴 답변은 빼고, 답변은 오래된 순(대화처럼 읽히게).
  * 작성자 · 질문자는 닉네임만 꺼낸다 — 이메일 · 해시는 절대 꺼내지 않는다.
  * "내가 눌렀는가"는 내 확인 행만 골라 존재 여부로 본다. 비로그인이면 아무 행도 걸리지 않는다.
+ * "내가 썼는가"는 작성자 id 를 꺼내 toAnswerItem 에서 비교만 하고, id 자체는 응답에 싣지 않는다.
  */
 export function questionSelect(viewerId: string | null) {
   return {
@@ -38,6 +39,8 @@ export function answerSelect(viewerId: string | null) {
     questionId: true,
     text: true,
     createdAt: true,
+    // "내가 썼는가" 비교용. 응답에는 내보내지 않는다(다른 사람 id 노출 방지).
+    authorId: true,
     author: { select: { nickname: true } },
     _count: { select: { confirmations: true } },
     // 비로그인이면 어떤 사용자 id 와도 같지 않은 빈 문자열로 걸러 항상 빈 배열이 된다.
@@ -51,6 +54,8 @@ export interface AnswerRow {
   questionId: string;
   text: string;
   createdAt: Date;
+  /** 비교용. 응답에는 싣지 않는다. */
+  authorId: string;
   author: { nickname: string };
   _count: { confirmations: number };
   /** 내가 누른 확인 행. 있으면 1개, 없으면 빈 배열 */
@@ -71,7 +76,11 @@ export interface QuestionRow {
   answers: AnswerRow[];
 }
 
-export function toAnswerItem(row: AnswerRow): AnswerItem {
+/**
+ * 답변 하나. viewerId 는 지금 로그인한 사람의 id(비로그인이면 null).
+ * 작성자 id 는 비교에만 쓰고 결과에 담지 않는다 — confirmedByMe 와 같은 방식이다.
+ */
+export function toAnswerItem(row: AnswerRow, viewerId: string | null): AnswerItem {
   return {
     id: row.id,
     questionId: row.questionId,
@@ -79,8 +88,16 @@ export function toAnswerItem(row: AnswerRow): AnswerItem {
     text: row.text,
     confirmationCount: row._count.confirmations,
     confirmedByMe: row.confirmations.length > 0,
+    authoredByMe: viewerId !== null && row.authorId === viewerId,
     createdAt: row.createdAt.toISOString(),
   };
+}
+
+export interface QuestionItemOptions {
+  /** 지금 로그인한 사람의 id. 비로그인이면 null(기본값). */
+  viewerId?: string | null;
+  /** 질문자 닉네임을 보여줄지. 운영자 승격 큐에서만 true. */
+  showAsker?: boolean;
 }
 
 /**
@@ -88,7 +105,7 @@ export function toAnswerItem(row: AnswerRow): AnswerItem {
  * AI 가 모른다고 한 질문(UNKNOWN)은 aiAnswer 를 null 로 내린다(`lib/types.ts` 계약).
  */
 // 질문은 원래 익명이다. 공개 목록에는 닉네임을 내리지 않고, 운영자 승격 큐에서만 보여준다.
-export function toQuestionItem(row: QuestionRow, { showAsker = false }: { showAsker?: boolean } = {}): QuestionItem {
+export function toQuestionItem(row: QuestionRow, { viewerId = null, showAsker = false }: QuestionItemOptions = {}): QuestionItem {
   return {
     id: row.id,
     text: row.text,
@@ -98,7 +115,7 @@ export function toQuestionItem(row: QuestionRow, { showAsker = false }: { showAs
     aiAnswer: row.confidence === 'UNKNOWN' ? null : row.aiAnswer,
     confidence: row.confidence,
     status: row.status,
-    answers: row.answers.map(toAnswerItem),
+    answers: row.answers.map((answer) => toAnswerItem(answer, viewerId)),
     createdAt: row.createdAt.toISOString(),
   };
 }

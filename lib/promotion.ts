@@ -47,13 +47,29 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** 마지막 글자에 받침이 있는가. 한글이 아니면 false(받침 없음으로 본다). */
+function hasFinalConsonant(word: string): boolean {
+  const code = word.charCodeAt(word.length - 1) - 0xac00;
+  return code >= 0 && code <= 11171 && code % 28 !== 0;
+}
+
+/** "출처를", "제목을" — 받침에 맞는 목적격 조사를 붙인다. 화면에 그대로 띄우는 문장이라 "을(를)" 로 두지 않는다. */
+export function withObject(word: string): string {
+  return `${word}${hasFinalConsonant(word) ? '을' : '를'}`;
+}
+
+/** "출처는", "제목은" — 받침에 맞는 보조사를 붙인다. */
+export function withTopic(word: string): string {
+  return `${word}${hasFinalConsonant(word) ? '은' : '는'}`;
+}
+
 /** 필수 문자열: 앞뒤 공백을 지우고 1~max 자 */
 function required(value: unknown, label: string, max: number): Field<string> {
-  if (typeof value !== 'string') return { ok: false, error: `${label}을(를) 입력해 주세요.` };
+  if (typeof value !== 'string') return { ok: false, error: `${withObject(label)} 입력해 주세요.` };
   const trimmed = value.trim();
   const length = [...trimmed].length;
-  if (length === 0) return { ok: false, error: `${label}을(를) 입력해 주세요.` };
-  if (length > max) return { ok: false, error: `${label}은(는) ${max}자 이하로 입력해 주세요.` };
+  if (length === 0) return { ok: false, error: `${withObject(label)} 입력해 주세요.` };
+  if (length > max) return { ok: false, error: `${withTopic(label)} ${max}자 이하로 입력해 주세요.` };
   return { ok: true, value: trimmed };
 }
 
@@ -63,7 +79,7 @@ function optional(value: unknown, label: string): Field<string | null> {
   if (typeof value !== 'string') return { ok: false, error: BAD_REQUEST };
   const trimmed = value.trim();
   if (trimmed === '') return { ok: true, value: null };
-  if ([...trimmed].length > FIELD_MAX) return { ok: false, error: `${label}은(는) ${FIELD_MAX}자 이하로 입력해 주세요.` };
+  if ([...trimmed].length > FIELD_MAX) return { ok: false, error: `${withTopic(label)} ${FIELD_MAX}자 이하로 입력해 주세요.` };
   return { ok: true, value: trimmed };
 }
 

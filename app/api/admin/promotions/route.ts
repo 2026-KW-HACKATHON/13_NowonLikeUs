@@ -20,7 +20,7 @@ export async function GET() {
   });
 
   const items = rows.map((row) => {
-      const question = toQuestionItem(row, { showAsker: true });
+      const question = toQuestionItem(row, { viewerId: admin.id, showAsker: true });
     return { question, totalConfirmations: totalConfirmations(question.answers) };
   });
 
