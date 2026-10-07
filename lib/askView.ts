@@ -54,3 +54,14 @@ export function askProfile(profile: Profile): AskProfile {
     isStudent: profile.isStudent,
   };
 }
+
+/**
+ * 질문이 실제로 Google(Gemini)로 나가는가. 질문 화면의 고지 문구가 이 값으로 갈린다.
+ *
+ * `/api/ask` 는 스위치(`GEMINI_ALLOW_USER_INPUT=true`)가 켜졌을 때만 Gemini 를 부르고,
+ * `askGemini` 는 키가 비어 있으면 요청을 보내지 않는다. 둘 다 있어야 전송된다.
+ * 고지는 실제 동작과 같아야 한다 — 안 보내면서 보낸다고 하거나, 보내면서 말하지 않으면 안 된다.
+ */
+export function sendsQuestionsToGoogle(env: { GEMINI_ALLOW_USER_INPUT?: string; GEMINI_API_KEY?: string }): boolean {
+  return env.GEMINI_ALLOW_USER_INPUT === 'true' && Boolean(env.GEMINI_API_KEY?.trim());
+}
