@@ -197,10 +197,19 @@ function AskResult({
         <div className="answer answer--unknown">
           <ConfidenceBadge confidence="UNKNOWN" />
           <p className="answer__text">아직 확인된 정보가 없습니다.</p>
-          <p className="answer__hint">
-            질문은 기록되어 정보를 보강하는 데 쓰입니다. 급하다면 주민센터에 문의하는 것이 가장 정확합니다.
-          </p>
+          <p className="answer__hint">급하다면 주민센터에 문의하는 것이 가장 정확합니다.</p>
         </div>
+      )}
+
+      {/*
+        확인된 정보로 답하지 못한 질문(GROUNDED 가 아닌 것)은 '이웃의 질문'에 올라간다.
+        질문한 사람이 그걸 모르면 답이 달려도 다시 와 보지 않는다. 그 질문 위치로 바로 보낸다.
+      */}
+      {res.confidence !== 'GROUNDED' && (
+        <p className="ask-next">
+          이 질문은 &lsquo;이웃의 질문&rsquo;에 올라갔습니다. 먼저 와 본 주민이 답하면 거기서 볼 수 있습니다.{' '}
+          <Link href={`/questions?status=OPEN#q-${res.questionId}`}>이웃의 질문에서 보기</Link>
+        </p>
       )}
 
       {res.tasks.length > 0 && (

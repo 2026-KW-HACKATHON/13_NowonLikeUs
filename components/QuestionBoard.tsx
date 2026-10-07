@@ -48,6 +48,22 @@ export default function QuestionBoard({ status }: { status: QuestionStatus }) {
     };
   }, [status, attempt]);
 
+  // 목록은 화면이 나중에 불러온다. 브라우저의 #q-... 이동은 그 전에 끝나므로, 다 불러온 뒤 직접 옮긴다.
+  // 질문 화면의 "이웃의 질문에서 보기", 로그인 후 복귀가 이 주소로 온다. 한 번만 옮긴다.
+  // 브라우저의 :target 도 그 시점에 없던 요소에는 걸리지 않아서, 찾아온 질문 표시도 직접 한다.
+  const [targetId] = useState(() =>
+    typeof window !== 'undefined' && location.hash.startsWith('#q-') ? location.hash.slice(3) : null,
+  );
+  const scrolled = useRef(false);
+  useEffect(() => {
+    if (load.kind !== 'ready' || scrolled.current || !targetId) return;
+    scrolled.current = true;
+    const target = document.getElementById(`q-${targetId}`);
+    if (!target) return;
+    target.scrollIntoView({ block: 'start' });
+    target.focus({ preventScroll: true });
+  }, [load, targetId]);
+
   function update(fn: (questions: QuestionItem[]) => QuestionItem[]) {
     setLoad((prev) => (prev.kind === 'ready' ? { kind: 'ready', questions: fn(prev.questions) } : prev));
   }
@@ -86,6 +102,7 @@ export default function QuestionBoard({ status }: { status: QuestionStatus }) {
         <li key={q.id}>
           <QuestionCard
             question={q}
+            isTarget={q.id === targetId}
             onAnswered={(answer) => update((list) => withAnswer(list, q.id, answer))}
             onConfirmed={(answerId, res) => update((list) => withConfirm(list, answerId, res))}
           />
@@ -97,10 +114,12 @@ export default function QuestionBoard({ status }: { status: QuestionStatus }) {
 
 function QuestionCard({
   question: q,
+  isTarget,
   onAnswered,
   onConfirmed,
 }: {
   question: QuestionItem;
+  isTarget: boolean;
   onAnswered: (answer: AnswerItem) => void;
   onConfirmed: (answerId: string, res: ConfirmAnswerResponse) => void;
 }) {
@@ -111,7 +130,8 @@ function QuestionCard({
   const slot = answerSlot(q.status, { loaded: session.loaded, loggedIn: session.user !== null });
 
   return (
-    <article className="qcard" id={`q-${q.id}`} aria-labelledby={headingId}>
+    // tabIndex -1: 주소의 #q-... 로 왔을 때 스크린리더 초점을 이 질문으로 옮길 수 있게.
+    <article className={isTarget ? 'qcard qcard--target' : 'qcard'} id={`q-${q.id}`} aria-labelledby={headingId} tabIndex={-1}>
       {/*
         AI 신뢰도 배지는 붙이지 않는다. "아직 아무도 확인하지 않았습니다"는 AI 답변용 문구라,
         바로 아래 주민 답변이 달려 있으면 말이 어긋난다. 이 목록에는 GROUNDED 가 애초에 없다.
