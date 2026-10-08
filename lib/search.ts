@@ -22,27 +22,40 @@ const SHORT_STOPWORDS = new RegExp(`^(뭐|곳|것|거|때|몇|일)${PARTICLE}$`,
  */
 const PREDICATE = /(려면|으면|하면|려고|는데|니까|야|요|까)$/u;
 
+/** 버리는 질문인지. 띄어쓰기를 뺀 질문에서 찾는다. */
+const DISPOSAL = /버리|버려|버릴|버린|버림|폐기|배출|수거|처분|처리|재활용|내놓/u;
+
+interface SynonymGroup {
+  words: string[];
+  expanded: string[];
+  /** 이 표현이 질문에 있을 때만 넓힌다. 카드가 특정 상황(버리기)만 안내할 때 쓴다. */
+  when?: RegExp;
+}
+
 /**
  * 질문에 쓰는 말과 카드에 쓰인 말이 다른 경우의 동의어. 질문 키워드를 넓히는 데만 쓴다.
  * 넓힌 말이 걸려도 원래 키워드 하나로 센다. "소파 버리기"가 "대형폐기물" 카드를 찾게 한다.
- * 냉장고·세탁기 같은 대형 가전은 소형 가전·가구와 처리 방법이 같다고 보장할 수 없어 넣지 않는다.
- * 검증된 대형 폐가전 카드가 시드에 생기면 그 카드로만 잇는다.
+ * 가구·소형 가전 카드는 버리는 방법만 안내하므로 버리는 질문에서만 넓힌다("소파 청소"는 넓히지 않는다).
+ * 소형 가전은 카드에 품목으로 적힌 것만 넣는다.
  */
-const SYNONYM_GROUPS: [string[], string[]][] = [
-  [['소파', '쇼파', '침대', '책상', '옷장', '매트리스'], ['가구', '대형폐기물']],
-  [['분리수거'], ['분리배출', '재활용']],
-  [['강아지', '애완견'], ['반려견']],
+const SYNONYM_GROUPS: SynonymGroup[] = [
+  { words: ['소파', '쇼파', '침대', '책상', '옷장', '매트리스'], expanded: ['가구', '대형폐기물'], when: DISPOSAL },
+  { words: ['전자레인지', '드라이기'], expanded: ['작은 가전'], when: DISPOSAL },
+  { words: ['분리수거'], expanded: ['분리배출', '재활용'] },
+  { words: ['강아지', '애완견'], expanded: ['반려견'] },
 ];
 
-const SYNONYMS = new Map(SYNONYM_GROUPS.flatMap(([words, expanded]) => words.map((word) => [word, expanded] as const)));
+const SYNONYMS = new Map(SYNONYM_GROUPS.flatMap((group) => group.words.map((word) => [word, group] as const)));
 
 /**
- * 시드에 검증된 안내 카드가 없는 폐기 질문. 띄어쓰기를 뺀 질문에 대상과 폐기 표현이 함께 있으면 빈 결과를 돌려준다.
- * "냉장고 버리는 방법"이 "버리는" 하나로 생활쓰레기·작은 가전·대형폐기물 카드에 걸리는 것을 막는다.
+ * 시드에 검증된 안내 카드가 없는 대형 가전. 띄어쓰기를 뺀 질문에 있으면 버리는 표현이 없어도 빈 결과를 돌려준다.
+ * 폐기 표현 목록으로 거르면 "식기세척기 버리는 법", "에어컨 철거"처럼 다른 말로 물을 때 빠져나가
+ * 처리 방법이 다른 생활쓰레기·작은 가전·대형폐기물 카드를 안내하게 된다.
+ * 다른 주제와 함께 물어도 빈 결과가 되지만, 확인되지 않은 처리 방법을 보여주는 것보다 낫다.
  * 검증된 대형 폐가전 카드가 시드에 생기면 이 규칙 대신 그 카드로 잇는다.
  */
-const UNVERIFIED_DISPOSAL_ITEM = /냉장고|세탁기|에어컨|텔레비전|티비|tv|건조기|대형가전|대형폐가전/u;
-const DISPOSAL = /버리|버려|버릴|버린|버림|폐기|배출|수거|처분|처리|재활용|내놓/u;
+const UNVERIFIED_LARGE_APPLIANCE =
+  /냉장고|냉동고|세탁기|건조기|에어컨|텔레비전|텔레비젼|티비|티브이|tv|식기세척기|정수기|안마의자|대형가전|대형폐가전|큰가전/u;
 
 /**
  * Gemini 호출 실패 시 사용할 키워드 검색.
@@ -66,9 +79,14 @@ export function keywordSearch<
   }
 
   const compactQuery = normalizedQuery.replace(/\s+/gu, '');
-  if (UNVERIFIED_DISPOSAL_ITEM.test(compactQuery) && DISPOSAL.test(compactQuery)) {
+  if (UNVERIFIED_LARGE_APPLIANCE.test(compactQuery)) {
     return [];
   }
+
+  const synonymsOf = (word: string): string[] => {
+    const group = SYNONYMS.get(word);
+    return group && (!group.when || group.when.test(compactQuery)) ? group.expanded : [];
+  };
 
   // "전입신고,확정일자"처럼 띄어 쓰지 않은 나열도 나눈다.
   const keywords = [...new Set(normalizedQuery.split(/[\s,·]+/u)
@@ -79,7 +97,7 @@ export function keywordSearch<
   })).filter(({ word, stem }) => !STOPWORDS.has(word) && !STOPWORDS.has(stem) && !SHORT_STOPWORDS.test(word))
     .map((keyword) => ({
       ...keyword,
-      forms: [keyword.word, keyword.stem, ...(SYNONYMS.get(keyword.stem) ?? SYNONYMS.get(keyword.word) ?? [])],
+      forms: [keyword.word, keyword.stem, ...synonymsOf(keyword.stem), ...synonymsOf(keyword.word)],
     }));
 
   // 서술부와 한 글자 키워드는 뜻이 약해 "키워드가 둘 이상인 질문"을 판단할 때 세지 않는다.
