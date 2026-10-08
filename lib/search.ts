@@ -21,6 +21,19 @@ const SHORT_STOPWORDS = new RegExp(`^(뭐|곳|것|거|때|몇|일)${PARTICLE}$`,
 const PREDICATE = /(려면|으면|하면|려고|는데|니까|야|요|까)$/u;
 
 /**
+ * 질문에 쓰는 말과 카드에 쓰인 말이 다른 경우의 동의어. 질문 키워드를 넓히는 데만 쓴다.
+ * 넓힌 말이 걸려도 원래 키워드 하나로 센다. "소파 버리기"가 "대형폐기물" 카드를 찾게 한다.
+ */
+const SYNONYM_GROUPS: [string[], string[]][] = [
+  [['소파', '쇼파', '침대', '책상', '옷장', '매트리스'], ['가구', '대형폐기물']],
+  [['냉장고', '세탁기', '에어컨', '텔레비전'], ['가전', '대형폐기물']],
+  [['분리수거'], ['분리배출', '재활용']],
+  [['강아지', '애완견'], ['반려견']],
+];
+
+const SYNONYMS = new Map(SYNONYM_GROUPS.flatMap(([words, expanded]) => words.map((word) => [word, expanded] as const)));
+
+/**
  * Gemini 호출 실패 시 사용할 키워드 검색.
  * 서로 다른 키워드의 부분 문자열 일치 수로 정렬하며 원본 데이터는 수정하지 않는다.
  * 의미 있는 키워드가 둘 이상인 질문에서 하나만 걸린 항목은 제목에 걸렸을 때만 인정한다.
@@ -46,15 +59,19 @@ export function keywordSearch<
     .filter(Boolean))].map((word) => ({
     word,
     stem: word.replace(new RegExp(`^([가-힣]{2,}?)${PARTICLE}$`, 'u'), '$1'),
-  })).filter(({ word, stem }) => !STOPWORDS.has(word) && !STOPWORDS.has(stem) && !SHORT_STOPWORDS.test(word));
+  })).filter(({ word, stem }) => !STOPWORDS.has(word) && !STOPWORDS.has(stem) && !SHORT_STOPWORDS.test(word))
+    .map((keyword) => ({
+      ...keyword,
+      forms: [keyword.word, keyword.stem, ...(SYNONYMS.get(keyword.stem) ?? SYNONYMS.get(keyword.word) ?? [])],
+    }));
 
   // 서술부와 한 글자 키워드는 뜻이 약해 "키워드가 둘 이상인 질문"을 판단할 때 세지 않는다.
   const meaningfulCount = new Set(keywords
     .filter(({ word, stem }) => stem.length > 1 && !PREDICATE.test(word))
     .map(({ stem }) => stem)).size;
 
-  const matchedStems = (field: string, minLength = 1) => new Set(keywords.filter(({ word, stem }) =>
-    stem.length >= minLength && (field.includes(word) || field.includes(stem)),
+  const matchedStems = (field: string, minLength = 1) => new Set(keywords.filter(({ stem, forms }) =>
+    stem.length >= minLength && forms.some((form) => field.includes(form)),
   ).map(({ stem }) => stem));
 
   return items
