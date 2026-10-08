@@ -7,6 +7,8 @@ const STOPWORDS = new Set([
   '해야', '해야해요', '해야하나요', '하나요', '해요', '하면', '하려면', '하는', '할', '돼', '돼요', '되나요', '되면',
   '있나요', '있어요', '없나요', '받아야', '받는', '받으려면', '곳', '것', '거', '때',
   '알려줘', '알려주세요', '궁금해요', '좀', '혹시', '저', '제가', '저는', '나', '내가', '일', '무슨',
+  // "버리는 방법 알아두기"처럼 카드 제목에 흔해, 이 말 하나로 관계없는 카드가 걸리는 것을 막는다.
+  '방법',
 ]);
 
 const PARTICLE = '(으로|에서|에게|한테|부터|까지|처럼|보다|은|는|이|가|을|를|에|로|와|과|도|만)';
@@ -41,7 +43,8 @@ export function keywordSearch<
     return [];
   }
 
-  const keywords = [...new Set(normalizedQuery.split(/\s+/)
+  // "전입신고,확정일자"처럼 띄어 쓰지 않은 나열도 나눈다.
+  const keywords = [...new Set(normalizedQuery.split(/[\s,·]+/u)
     .map((word) => word.replace(/^\p{P}+|\p{P}+$/gu, ''))
     .filter(Boolean))].map((word) => ({
     word,
