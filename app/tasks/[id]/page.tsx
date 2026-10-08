@@ -3,10 +3,12 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import Masthead from '@/components/Masthead';
 import { CATEGORY_LABEL, asOfLabel, dueLabel } from '@/lib/labels';
 import { loadProfile } from '@/lib/profile';
 import { isDone, toggleDone } from '@/lib/progress';
 import { useDone } from '@/lib/useDone';
+import { useProfile } from '@/lib/useProfile';
 import type { MatchedTask, TaskDetailResponse } from '@/lib/types';
 
 type State =
@@ -30,6 +32,8 @@ export default function TaskDetailPage() {
   const { id } = useParams<{ id: string }>();
   const [state, setState] = useState<State>({ kind: 'loading' });
   const doneIds = useDone();
+  // 남은 날짜가 이 조건(이사일)으로 계산되므로, 목록 화면처럼 상단바에 조건 줄을 같이 보인다.
+  const { profile } = useProfile();
   // 저장이 막힌 환경에서는 눌러도 안 바뀐다. 말없이 넘어가면 고장난 줄 안다.
   const [saveFailed, setSaveFailed] = useState(false);
 
@@ -70,6 +74,7 @@ export default function TaskDetailPage() {
   if (state.kind === 'loading') {
     return (
       <main>
+        <Masthead profile={profile} />
         <p className="empty" role="status">
           불러오는 중입니다…
         </p>
@@ -80,6 +85,7 @@ export default function TaskDetailPage() {
   if (state.kind === 'notfound' || state.kind === 'failed') {
     return (
       <main>
+        <Masthead profile={profile} />
         <Link href="/tasks" className="back">
           ← 내 할 일
         </Link>
@@ -101,6 +107,7 @@ export default function TaskDetailPage() {
 
   return (
     <main>
+      <Masthead profile={profile} />
       <Link href="/tasks" className="back">
         ← 내 할 일
       </Link>
