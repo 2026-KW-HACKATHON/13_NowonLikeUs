@@ -9,4 +9,3 @@ CREATE TABLE "RateLimitCounter" (
 
 -- CreateIndex
 CREATE INDEX "RateLimitCounter_expiresAt_idx" ON "RateLimitCounter"("expiresAt");
-
