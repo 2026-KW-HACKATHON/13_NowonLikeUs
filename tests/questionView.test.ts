@@ -1,5 +1,13 @@
 import { describe, it, expect } from 'vitest';
-import { parseStatusFilter, toAnswerItem, toQuestionItem, type AnswerRow, type QuestionRow } from '@/lib/questionView';
+import {
+  boardWhere,
+  canAskNeighbors,
+  parseStatusFilter,
+  toAnswerItem,
+  toQuestionItem,
+  type AnswerRow,
+  type QuestionRow,
+} from '@/lib/questionView';
 
 const answer = (over: Partial<AnswerRow> = {}): AnswerRow => ({
   id: 'a1',
@@ -97,5 +105,31 @@ describe('parseStatusFilter', () => {
     expect(parseStatusFilter('')).toBeNull();
     expect(parseStatusFilter('ANSWERED')).toBe('ANSWERED');
     expect(parseStatusFilter('answered')).toBeUndefined();
+  });
+});
+
+describe('boardWhere', () => {
+  it('GROUNDED 는 빼되 이웃에게 넘긴 질문은 남긴다', () => {
+    expect(boardWhere(null)).toEqual({ OR: [{ confidence: { not: 'GROUNDED' } }, { askNeighbors: true }] });
+  });
+
+  it('상태 필터와 함께 쓴다', () => {
+    expect(boardWhere('OPEN')).toEqual({
+      OR: [{ confidence: { not: 'GROUNDED' } }, { askNeighbors: true }],
+      status: 'OPEN',
+    });
+  });
+});
+
+describe('canAskNeighbors', () => {
+  it('비로그인 질문은 id 를 아는 누구나(질문자) 넘길 수 있다', () => {
+    expect(canAskNeighbors({ askerId: null }, null)).toBe(true);
+    expect(canAskNeighbors({ askerId: null }, 'u1')).toBe(true);
+  });
+
+  it('로그인 질문은 질문자만 넘길 수 있다', () => {
+    expect(canAskNeighbors({ askerId: 'u1' }, 'u1')).toBe(true);
+    expect(canAskNeighbors({ askerId: 'u1' }, 'u2')).toBe(false);
+    expect(canAskNeighbors({ askerId: 'u1' }, null)).toBe(false);
   });
 });

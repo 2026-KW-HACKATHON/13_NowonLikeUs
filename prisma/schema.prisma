@@ -103,6 +103,8 @@ model Question {
   sourceIds       String[]
   confidence      Confidence     @default(UNKNOWN)
   status          QuestionStatus @default(OPEN)
+  /// 확인된 답(GROUNDED)을 받았지만 질문자가 "원하는 답이 아니에요"로 이웃에게도 물은 질문
+  askNeighbors    Boolean        @default(false)
   createdAt       DateTime       @default(now())
 
   answers Answer[]
