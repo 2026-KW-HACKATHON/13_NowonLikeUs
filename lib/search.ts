@@ -23,17 +23,30 @@ const SHORT_STOPWORDS = new RegExp(`^(뭐|곳|것|거|때|몇|일)${PARTICLE}$`,
 const PREDICATE = /(려면|으면|하면|려고|는데|니까|야|요|까)$/u;
 
 /**
- * 버리는 질문인지. 띄어쓰기를 뺀 질문에서 찾는다("내다 놓기" → "내다놓기").
- * "치우기", "없애기", "내다 놓기", "회수"처럼 버린다는 말 없이 묻는 표현도 넣는다.
+ * 질문 어디에 있어도 버리는 뜻인 표현. 띄어쓰기를 뺀 질문에서 찾는다("내다 놓기" → "내다놓기").
  * "정리"는 "옷장 정리"처럼 버리는 뜻이 아닐 때가 많아 넣지 않는다.
  */
-const DISPOSAL = /버리|버려|버릴|버린|버림|폐기|배출|수거|회수|처분|처리|재활용|내놓|내다놓|치우|치워|치울|없애|없앨/u;
+const CLEAR_DISPOSAL = /버리|버려|버릴|버린|버림|폐기|배출|수거|회수|처분|재활용|내놓|내다놓/u;
+
+/**
+ * 버리는 뜻과 청소 뜻이 섞이는 표현. "소파 치우기"는 버리기지만 "소파 먼지 치우기"는 청소다.
+ * 그래서 대상 바로 뒤(조사·띄어쓰기만 허용)에 올 때만 버리는 질문으로 본다.
+ */
+const AMBIGUOUS_DISPOSAL = '(치우|치워|치울|없애|없앨|처리)';
+
+/**
+ * 질문에 이 표현이 있으면 카드에 쓰인 말을 키워드로 하나 더 넣는다.
+ * "쓰레기 봉투"처럼 띄어 써서 두 낱말로 갈라지는 말도 붙여 쓴 것과 똑같이 잇는다.
+ */
+const PHRASE_KEYWORDS: [RegExp, string][] = [
+  [/쓰레기\s*봉투/u, '종량제봉투'],
+];
 
 interface SynonymGroup {
   words: string[];
   expanded: string[];
-  /** 이 표현이 질문에 있을 때만 넓힌다. 카드가 특정 상황(버리기)만 안내할 때 쓴다. */
-  when?: RegExp;
+  /** 그 낱말을 버리는 질문일 때만 넓힌다. 카드가 버리는 방법만 안내할 때 쓴다. */
+  disposalOnly?: boolean;
 }
 
 /**
@@ -43,8 +56,8 @@ interface SynonymGroup {
  * 소형 가전은 카드에 품목으로 적힌 것만 넣는다.
  */
 const SYNONYM_GROUPS: SynonymGroup[] = [
-  { words: ['소파', '쇼파', '침대', '책상', '옷장', '매트리스'], expanded: ['가구', '대형폐기물'], when: DISPOSAL },
-  { words: ['전자레인지', '드라이기'], expanded: ['작은 가전'], when: DISPOSAL },
+  { words: ['소파', '쇼파', '침대', '책상', '옷장', '매트리스'], expanded: ['가구', '대형폐기물'], disposalOnly: true },
+  { words: ['전자레인지', '드라이기'], expanded: ['작은 가전'], disposalOnly: true },
   { words: ['분리수거'], expanded: ['분리배출', '재활용'] },
   { words: ['강아지', '애완견'], expanded: ['반려견'] },
 ];
@@ -68,6 +81,7 @@ const UNVERIFIED_LARGE_APPLIANCE =
  * 서술부("지키려면")와 한 글자 키워드는 의미 있는 키워드 수에 넣지 않는다.
  * 두 글자 이상 키워드의 일치 수로 먼저 정렬하고, 같으면 제목에 걸린 키워드가 많은 항목을 먼저 둔다.
  * 한 글자 키워드는 혼자서 항목을 찾지 못하고, 일치는 마지막 동점 처리에만 쓴다.
+ * 질문 키워드는 동의어로 넓히고, 검증된 카드가 없는 대형 가전 질문은 빈 결과로 둔다.
  * 결과는 관련 항목 후보일 뿐, 답변의 근거나 신뢰도를 확정하지 않는다.
  */
 export function keywordSearch<
@@ -87,9 +101,13 @@ export function keywordSearch<
     return [];
   }
 
+  // 동의어 표의 낱말만 정규식에 넣으므로 이스케이프가 필요 없다.
+  const isDisposalOf = (word: string) => CLEAR_DISPOSAL.test(compactQuery)
+    || new RegExp(`${word}${PARTICLE}?\\s*${AMBIGUOUS_DISPOSAL}`, 'u').test(normalizedQuery);
+
   const synonymsOf = (word: string): string[] => {
     const group = SYNONYMS.get(word);
-    return group && (!group.when || group.when.test(compactQuery)) ? group.expanded : [];
+    return group && (!group.disposalOnly || isDisposalOf(word)) ? group.expanded : [];
   };
 
   // "전입신고,확정일자"처럼 띄어 쓰지 않은 나열도 나눈다.
@@ -101,8 +119,11 @@ export function keywordSearch<
   })).filter(({ word, stem }) => !STOPWORDS.has(word) && !STOPWORDS.has(stem) && !SHORT_STOPWORDS.test(word))
     .map((keyword) => ({
       ...keyword,
-      forms: [keyword.word, keyword.stem, ...synonymsOf(keyword.stem), ...synonymsOf(keyword.word)],
-    }));
+      forms: [keyword.word, keyword.stem, ...synonymsOf(SYNONYMS.has(keyword.stem) ? keyword.stem : keyword.word)],
+    }))
+    .concat(PHRASE_KEYWORDS
+      .filter(([pattern]) => pattern.test(normalizedQuery))
+      .map(([, word]) => ({ word, stem: word, forms: [word] })));
 
   // 서술부와 한 글자 키워드는 뜻이 약해 "키워드가 둘 이상인 질문"을 판단할 때 세지 않는다.
   const meaningfulCount = new Set(keywords

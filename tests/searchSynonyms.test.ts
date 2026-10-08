@@ -44,6 +44,25 @@ describe('keywordSearch 동의어 (실제 시드 · 프로필 후보)', () => {
     expect(titles(housingType, query)[0]).toBe('큰 가구 버리는 방법 알아두기 (대형폐기물)');
   });
 
+  it.each([['ONE_ROOM', '소파를 치우려면'], ['VILLA', '소파 처리하려면'], ['APARTMENT', '침대는 없애고 싶어요']] as const)(
+    '%s 프로필에서 치우기·없애기·처리가 가구 바로 뒤에 오면 버리는 질문으로 본다: %s', (housingType, query) => {
+      expect(titles(housingType, query)[0]).toBe('큰 가구 버리는 방법 알아두기 (대형폐기물)');
+    },
+  );
+
+  // 치우기·없애기·처리는 청소에도 쓰여, 가구·가전과 사이에 다른 말이 끼면 버리는 질문으로 보지 않는다.
+  it.each(['ONE_ROOM', 'VILLA', 'APARTMENT', 'OFFICETEL', 'DORM'] as const)('%s 프로필에서 청소 문맥은 폐기 카드를 찾지 않는다', (housingType) => {
+    for (const query of ['소파 얼룩 없애기', '소파 먼지 치우기', '책상 표면 처리 방법', '전자레인지 냄새 없애기']) {
+      expect(titles(housingType, query), query).toEqual([]);
+    }
+  });
+
+  it.each(['ONE_ROOM', 'VILLA', 'APARTMENT', 'OFFICETEL'] as const)('%s 프로필에서 쓰레기봉투는 종량제봉투 카드를 먼저 찾는다', (housingType) => {
+    for (const query of ['쓰레기봉투 어디서 사요?', '쓰레기 봉투 사는 곳', '쓰레기봉투 파는 곳']) {
+      expect(titles(housingType, query)[0], query).toBe('종량제봉투 파는 곳 알아두기');
+    }
+  });
+
   // 가구 카드는 버리는 방법만 안내하므로, 버리는 질문이 아닐 때는 가구 이름을 넓히지 않는다.
   it.each(['소파 청소 업체', '책상 조립 방법', '침대 추천', '소파', '옷장 정리 방법'])('버리는 질문이 아니면 가구 이름으로 대형폐기물 카드를 찾지 않는다: %s', (query) => {
     expect(titles('ONE_ROOM', query)).not.toContain('큰 가구 버리는 방법 알아두기 (대형폐기물)');
