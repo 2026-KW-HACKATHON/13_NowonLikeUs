@@ -1444,3 +1444,80 @@ button:disabled {
 .editor__error {
   margin: 0 0 var(--space-3);
 }
+
+/* ---------- 표지 (/) ---------- */
+
+.cover {
+  padding: var(--space-4) 0 var(--space-6);
+  border-bottom: 2px solid var(--rule);
+}
+
+.cover__eyebrow {
+  margin: 0 0 var(--space-2);
+  font-size: 15px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--accent);
+}
+
+/* 표지만의 큰 제목. 화면 폭에 따라 커지되 작은 휴대폰에서도 두 줄 안에 든다. */
+.cover__title {
+  margin: 0 0 var(--space-3);
+  font-size: clamp(40px, 12vw, 60px);
+  font-weight: 900;
+  line-height: 1.12;
+  letter-spacing: -0.045em;
+}
+
+.cover__lead {
+  margin: 0 0 var(--space-4);
+  font-size: 19px;
+  color: var(--text-soft);
+}
+
+.cover__cats {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-5);
+  padding: 0;
+  list-style: none;
+}
+
+/* 할 일 목록의 색띠와 같은 색 — 표지에서 본 분류가 목록에서 그대로 이어진다. */
+.cover__cat {
+  padding: 4px 14px 4px 10px;
+  border-left: 5px solid var(--cat);
+  background: var(--cat-soft);
+  color: var(--cat);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.cover__start {
+  min-height: 60px;
+  font-size: 19px;
+}
+
+.cover__note {
+  margin: var(--space-2) 0 0;
+  font-size: 15px;
+  color: var(--text-soft);
+  text-align: center;
+}
+
+.cover-give {
+  padding: var(--space-5) 0 0;
+}
+
+.cover-give__title {
+  margin: 0 0 var(--space-1);
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.cover-give__body {
+  margin: 0 0 var(--space-2);
+  color: var(--text-soft);
+}
