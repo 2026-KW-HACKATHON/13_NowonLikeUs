@@ -186,7 +186,8 @@ function QuestionCard({
     <article className={isTarget ? 'qcard qcard--target' : 'qcard'} id={`q-${q.id}`} aria-labelledby={headingId} tabIndex={-1}>
       {/*
         AI 신뢰도 배지는 붙이지 않는다. "아직 아무도 확인하지 않았습니다"는 AI 답변용 문구라,
-        바로 아래 주민 답변이 달려 있으면 말이 어긋난다. 이 목록에는 GROUNDED 가 애초에 없다.
+        바로 아래 주민 답변이 달려 있으면 말이 어긋난다. 이 목록의 GROUNDED 는 질문자가
+        "원하는 답이 아니에요"로 넘긴 것뿐이라, "확인된 정보" 배지를 달면 오히려 헷갈린다.
       */}
       <div className="qcard__meta">
         {q.status === 'PROMOTED' && <span className="qcard__state qcard__state--promoted">할 일로 정리됨</span>}

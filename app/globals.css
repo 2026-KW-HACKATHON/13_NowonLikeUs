@@ -1281,6 +1281,18 @@ button:disabled {
   font-weight: 700;
 }
 
+/* 확인된 답이 원하던 답이 아닐 때 이웃에게 넘기는 자리. 카드 아래, 주 버튼보다 한 단계 약하게. */
+.ask-neighbors {
+  display: grid;
+  gap: var(--space-1);
+  margin: var(--space-3) 0 0;
+}
+
+.ask-neighbors__lead {
+  margin: 0;
+  font-weight: 700;
+}
+
 .next-helper__actions {
   display: grid;
   gap: var(--space-1);

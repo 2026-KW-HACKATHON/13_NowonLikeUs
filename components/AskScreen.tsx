@@ -16,7 +16,10 @@ type Phase =
   | { kind: 'failed'; message: string };
 
 /** 서버가 오류 문장을 주면 그대로, 못 주면 일반 문장으로. 오류 본문은 `{ error: string }` 이다. */
-async function errorMessage(res: Response): Promise<string> {
+async function errorMessage(
+  res: Response,
+  fallback = '질문을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.',
+): Promise<string> {
   try {
     const body: unknown = await res.json();
     if (body && typeof body === 'object' && 'error' in body && typeof body.error === 'string') {
@@ -25,7 +28,7 @@ async function errorMessage(res: Response): Promise<string> {
   } catch {
     // 본문이 JSON 이 아니면 아래 일반 문장을 쓴다.
   }
-  return '질문을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.';
+  return fallback;
 }
 
 /**
@@ -126,7 +129,8 @@ export default function AskScreen({ sendsToGoogle }: { sendsToGoogle: boolean })
               질문 내용과 주거형태 · 계약형태는 관련 항목을 찾기 위해 Google(Gemini)로 전송됩니다.{' '}
             </>
           )}
-          확인된 정보로 답하지 못한 질문은 주거형태 · 계약형태와 함께 &lsquo;이웃의 질문&rsquo;에 공개되어
+          확인된 정보로 답하지 못한 질문과 &lsquo;이웃에게 물어보기&rsquo;를 누른 질문은 주거형태 · 계약형태와 함께
+          &lsquo;이웃의 질문&rsquo;에 공개되어
           주민이 답할 수 있습니다. 이름 · 연락처 · 상세 주소 같은 개인정보는 적지 마세요.
         </p>
 
@@ -209,15 +213,11 @@ function AskResult({
       )}
 
       {/*
-        확인된 정보로 답하지 못한 질문(GROUNDED 가 아닌 것)은 '이웃의 질문'에 올라간다.
+        확인된 정보로 답하지 못한 질문(GROUNDED 가 아닌 것)은 '이웃의 질문'에 바로 올라간다.
+        GROUNDED 는 아래 AskNeighbors 버튼을 눌러야 올라간다.
         질문한 사람이 그걸 모르면 답이 달려도 다시 와 보지 않는다. 그 질문 위치로 바로 보낸다.
       */}
-      {res.confidence !== 'GROUNDED' && (
-        <p className="ask-next">
-          이 질문은 &lsquo;이웃의 질문&rsquo;에 올라갔습니다. 먼저 와 본 주민이 답하면 거기서 볼 수 있습니다.{' '}
-          <Link href={`/questions?status=OPEN#q-${res.questionId}`}>이웃의 질문에서 보기</Link>
-        </p>
-      )}
+      {res.confidence !== 'GROUNDED' && <OnBoardNote questionId={res.questionId} />}
 
       {res.tasks.length > 0 && (
         <>
@@ -230,6 +230,63 @@ function AskResult({
           <p className="asof">기한 · 금액 · 장소는 카드의 원문을 기준으로 보세요. 최종 확인은 주민센터에 문의하세요.</p>
         </>
       )}
+
+      {/* 카드를 읽고 나서 판단하도록 카드 아래에 둔다. 확인된 답이라도 질문과 어긋날 수 있다. */}
+      {res.confidence === 'GROUNDED' && <AskNeighbors key={res.questionId} questionId={res.questionId} />}
     </>
+  );
+}
+
+function OnBoardNote({ questionId }: { questionId: string }) {
+  return (
+    <p className="ask-next">
+      이 질문은 &lsquo;이웃의 질문&rsquo;에 올라갔습니다. 먼저 와 본 주민이 답하면 거기서 볼 수 있습니다.{' '}
+      <Link href={`/questions?status=OPEN#q-${questionId}`}>이웃의 질문에서 보기</Link>
+    </p>
+  );
+}
+
+/**
+ * 확인된 답(GROUNDED)은 '이웃의 질문'에 올라가지 않는다. 카드가 원하던 답이 아니면
+ * 질문자가 직접 올릴 수 있게 한다(POST /api/questions/[id]/ask-neighbors).
+ */
+function AskNeighbors({ questionId }: { questionId: string }) {
+  const [state, setState] = useState<'idle' | 'sending' | 'done' | 'failed'>('idle');
+  const [message, setMessage] = useState('');
+
+  async function handleClick() {
+    setState('sending');
+    try {
+      const res = await fetch(`/api/questions/${encodeURIComponent(questionId)}/ask-neighbors`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: '{}',
+      });
+      if (!res.ok) {
+        setMessage(await errorMessage(res, '이웃에게 묻지 못했습니다. 잠시 후 다시 시도해 주세요.'));
+        setState('failed');
+        return;
+      }
+      setState('done');
+    } catch {
+      setMessage('연결이 끊겼습니다. 잠시 후 다시 시도해 주세요.');
+      setState('failed');
+    }
+  }
+
+  if (state === 'done') return <OnBoardNote questionId={questionId} />;
+
+  return (
+    <div className="ask-neighbors">
+      <p className="ask-neighbors__lead">원하는 답이 아니에요?</p>
+      <button type="button" className="secondary-button" onClick={handleClick} disabled={state === 'sending'}>
+        {state === 'sending' ? '올리는 중…' : '이웃에게 물어보기'}
+      </button>
+      {state === 'failed' && (
+        <p className="warn" role="alert">
+          {message}
+        </p>
+      )}
+    </div>
   );
 }

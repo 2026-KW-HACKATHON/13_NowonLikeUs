@@ -139,6 +139,14 @@ export interface AskResponse {
   questionId: string;
 }
 
+/**
+ * POST /api/questions/[id]/ask-neighbors 응답. 본문은 `{}` 로 보낸다(JSON 만 받는다).
+ * 확인된 답을 받았지만 원하는 답이 아니었던 질문을 '이웃의 질문'에 올린다. 여러 번 눌러도 같다.
+ */
+export interface AskNeighborsResponse {
+  questionId: string;
+}
+
 /* ===========================================================================
  * 본선 범위 — 로그인 · 질문 · 답변 · 승격
  *
