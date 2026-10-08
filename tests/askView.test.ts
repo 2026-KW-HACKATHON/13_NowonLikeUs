@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { askProfile, describeAnswer } from '@/lib/askView';
+import { askProfile, describeAnswer, sendsQuestionsToGoogle } from '@/lib/askView';
 import { matchesProfile } from '@/lib/matching';
 import type { AskResponse, MatchedTask, Profile, TaskConditions } from '@/lib/types';
 
@@ -99,5 +99,25 @@ describe('askProfile', () => {
     for (const c of conditions) {
       expect(matchesProfile(c, sent)).toBe(matchesProfile(c, profile));
     }
+  });
+});
+
+describe('sendsQuestionsToGoogle', () => {
+  // 고지 문구가 실제 전송 여부와 어긋나면 안 된다. 서버(/api/ask · askGemini)와 같은 조건이어야 한다.
+  it('스위치가 true 이고 키가 있을 때만 전송한다', () => {
+    expect(sendsQuestionsToGoogle({ GEMINI_ALLOW_USER_INPUT: 'true', GEMINI_API_KEY: 'k' })).toBe(true);
+  });
+
+  it.each([
+    [{ GEMINI_ALLOW_USER_INPUT: 'false', GEMINI_API_KEY: 'k' }],
+    [{ GEMINI_ALLOW_USER_INPUT: 'TRUE', GEMINI_API_KEY: 'k' }],
+    [{ GEMINI_ALLOW_USER_INPUT: '1', GEMINI_API_KEY: 'k' }],
+    [{ GEMINI_API_KEY: 'k' }],
+  ])('스위치가 정확히 "true" 가 아니면 전송 X: %j', (env) => {
+    expect(sendsQuestionsToGoogle(env)).toBe(false);
+  });
+
+  it.each(['', '   ', undefined])('키가 비어 있으면 전송 X (askGemini 가 요청을 안 보냄): %j', (key) => {
+    expect(sendsQuestionsToGoogle({ GEMINI_ALLOW_USER_INPUT: 'true', GEMINI_API_KEY: key })).toBe(false);
   });
 });

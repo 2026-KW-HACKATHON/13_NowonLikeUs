@@ -14,7 +14,11 @@ export const ASK_MAX_LENGTH = 1000;
 export type AnswerView =
   /** AI 문장을 보여준다. 서버가 근거 id 를 확인한 경우만 */
   | { kind: 'answer'; confidence: 'GROUNDED' | 'PARTIAL'; text: string }
-  /** AI 없이 키워드로 찾은 카드만 보여준다 */
+  /**
+   * 확인된 근거 없이 키워드로 찾은 카드만 보여준다.
+   * AI 가 꺼졌거나 실패했을 때, 그리고 AI 가 "모름"이라고 판단했을 때(#48) 둘 다 여기로 온다.
+   * 응답으로는 둘을 구분할 수 없어서 화면 문구는 양쪽에 다 맞아야 한다.
+   */
   | { kind: 'fallback' }
   /** 보여줄 문장도 카드도 없다 — "아직 아무도 확인하지 않았습니다" */
   | { kind: 'unknown' };
@@ -53,4 +57,15 @@ export function askProfile(profile: Profile): AskProfile {
     hasPet: profile.hasPet,
     isStudent: profile.isStudent,
   };
+}
+
+/**
+ * 질문이 실제로 Google(Gemini)로 나가는가. 질문 화면의 고지 문구가 이 값으로 갈린다.
+ *
+ * `/api/ask` 는 스위치(`GEMINI_ALLOW_USER_INPUT=true`)가 켜졌을 때만 Gemini 를 부르고,
+ * `askGemini` 는 키가 비어 있으면 요청을 보내지 않는다. 둘 다 있어야 전송된다.
+ * 고지는 실제 동작과 같아야 한다 — 안 보내면서 보낸다고 하거나, 보내면서 말하지 않으면 안 된다.
+ */
+export function sendsQuestionsToGoogle(env: { GEMINI_ALLOW_USER_INPUT?: string; GEMINI_API_KEY?: string }): boolean {
+  return env.GEMINI_ALLOW_USER_INPUT === 'true' && Boolean(env.GEMINI_API_KEY?.trim());
 }
