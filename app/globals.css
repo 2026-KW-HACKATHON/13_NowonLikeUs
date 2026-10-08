@@ -212,6 +212,22 @@ a {
   letter-spacing: -0.03em;
 }
 
+/* 제호는 표지로 가는 링크. 밑줄 없이 글자 그대로, 누를 자리는 44px 높이. */
+.masthead__home {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  color: inherit;
+  text-decoration: none;
+}
+
+.masthead__mark {
+  flex: none;
+  width: 30px;
+  height: 30px;
+}
+
 .masthead__meta {
   margin: 0;
   font-size: 15px;
@@ -1448,7 +1464,7 @@ button:disabled {
 /* ---------- 표지 (/) ---------- */
 
 .cover {
-  padding: var(--space-4) 0 var(--space-6);
+  padding: 0 0 var(--space-6);
   border-bottom: 2px solid var(--rule);
 }
 
@@ -1520,4 +1536,33 @@ button:disabled {
 .cover-give__body {
   margin: 0 0 var(--space-2);
   color: var(--text-soft);
+}
+
+/* 표지 머리: 제목 왼쪽, 로고는 제목과 오른쪽 끝 사이 가운데. 320px 휴대폰에서도 "처음 왔나요?"가 한 줄에 들도록 제목 · 로고가 같이 줄어든다. */
+.cover__head {
+  display: flex;
+  align-items: center;
+  margin: 0 0 var(--space-3);
+}
+
+.cover__heading {
+  min-width: 0;
+}
+
+.cover__head .cover__title {
+  margin: 0;
+  font-size: clamp(32px, 10vw, 60px);
+}
+
+/* 표지 로고. 초록 · 베이지는 어두운 바탕에서 묻히므로 밝은 판 위에 올린다(다크 모드에서도 같은 판). */
+.cover__logo {
+  flex: none;
+  display: block;
+  width: clamp(72px, 24vw, 140px);
+  /* 양쪽 auto: 제목 끝 ~ 오른쪽 끝 사이 남는 폭의 한가운데에 놓인다. */
+  margin-inline: auto;
+  height: auto;
+  padding: 6px;
+  border-radius: var(--radius);
+  background: #f7f7f5;
 }

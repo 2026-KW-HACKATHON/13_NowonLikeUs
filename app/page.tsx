@@ -1,5 +1,6 @@
 'use client';
 
+import Image from 'next/image';
 import Link from 'next/link';
 import Masthead from '@/components/Masthead';
 import { CATEGORY_LABEL } from '@/lib/labels';
@@ -23,12 +24,26 @@ export default function Home() {
       <Masthead profile={profile} />
 
       <section className="cover" aria-labelledby="cover-title">
-        <p className="cover__eyebrow">광운대 앞 · 노원구 월계1동</p>
-        <h1 id="cover-title" className="cover__title">
-          월계1동에
-          <br />
-          처음 왔나요?
-        </h1>
+        {/* 제목 오른쪽에 로고. 로고 원본(public/logo.svg)은 글자까지 도형이라 기기마다 글꼴이 달라지지 않는다. */}
+        <div className="cover__head">
+          <div className="cover__heading">
+            <p className="cover__eyebrow">광운대 앞 · 노원구 월계1동</p>
+            <h1 id="cover-title" className="cover__title">
+              월계1동에
+              <br />
+              처음 왔나요?
+            </h1>
+          </div>
+          <Image
+            src="/logo.svg"
+            alt="월계는 처음이라"
+            width={551}
+            height={756}
+            className="cover__logo"
+            priority
+            unoptimized
+          />
+        </div>
         <p className="cover__lead">
           집 형태와 계약 형태만 알려 주세요. 나에게 해당하는 할 일만 기한과 함께 알려 드립니다.
         </p>
