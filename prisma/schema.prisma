@@ -132,3 +132,12 @@ model Confirmation {
 
   @@unique([answerId, userId])
 }
+
+/// 요청 횟수 제한 카운터. key = "제한 종류:대상(HMAC):시간 구간 번호". 구간이 끝난 행은 가끔 지운다.
+model RateLimitCounter {
+  key       String   @id
+  count     Int      @default(0)
+  expiresAt DateTime
+
+  @@index([expiresAt])
+}

@@ -1,45 +1,101 @@
-import { describe, expect, it } from 'vitest';
-import { clientIp, createLimiter, limitByIp, tooManyRequests, windowStart } from '@/lib/rateLimit';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { Prisma } from '@prisma/client';
+
+vi.mock('server-only', () => ({}));
+const db = vi.hoisted(() => ({ queryRaw: vi.fn(), deleteMany: vi.fn() }));
+vi.mock('@/lib/db', () => ({ prisma: { $queryRaw: db.queryRaw, rateLimitCounter: { deleteMany: db.deleteMany } } }));
+import {
+  clientIp, consumeRateLimit, counterQuery, counterRow, hashSubject, RATE_LIMITS, retryAfterSeconds, tooManyRequests,
+} from '@/lib/rateLimit';
 
 const req = (headers: Record<string, string>) => new Request('http://localhost/api/ask', { method: 'POST', headers });
+const warn = vi.spyOn(console, 'warn');
 
-describe('createLimiter', () => {
-  it('창 안에서 limit 번까지 허용하고 그다음은 남은 초를 돌려준다', () => {
-    const limiter = createLimiter({ limit: 3, windowMs: 60_000 });
-    expect([0, 1000, 2000].map((t) => limiter.hit('ip', t))).toEqual([0, 0, 0]);
-    // 첫 요청(0초)이 창에서 빠지는 60초까지 30초 남았다.
-    expect(limiter.hit('ip', 30_000)).toBe(30);
+beforeEach(() => {
+  vi.stubEnv('SESSION_SECRET', 'x'.repeat(32));
+  db.deleteMany.mockResolvedValue({ count: 0 });
+  warn.mockImplementation(() => {});
+});
+afterEach(() => { vi.unstubAllEnvs(); vi.resetAllMocks(); });
+
+describe('counterRow', () => {
+  it('같은 구간 안에서는 같은 키, 구간이 바뀌면 새 키이고 만료는 구간 끝이다', () => {
+    const a = counterRow({ name: 'askTotal', subject: '*' }, 60_000 * 10 + 1);
+    const b = counterRow({ name: 'askTotal', subject: '*' }, 60_000 * 11 - 1);
+    const c = counterRow({ name: 'askTotal', subject: '*' }, 60_000 * 11);
+    expect(a.key).toBe('askTotal:*:10');
+    expect(b.key).toBe(a.key);
+    expect(c.key).toBe('askTotal:*:11');
+    expect(a.expiresAt.getTime()).toBe(60_000 * 11);
+    expect(a.limit).toBe(RATE_LIMITS.askTotal.limit);
   });
 
-  it('막힌 요청은 세지 않아, 가장 오래된 요청이 창을 벗어나면 다시 허용한다', () => {
-    const limiter = createLimiter({ limit: 2, windowMs: 10_000 });
-    limiter.hit('ip', 0);
-    limiter.hit('ip', 5000);
-    expect(limiter.hit('ip', 9000)).toBeGreaterThan(0);
-    expect(limiter.hit('ip', 10_001)).toBe(0);
-    expect(limiter.hit('ip', 10_002)).toBeGreaterThan(0);
+  it('IP · 이메일은 원문 대신 HMAC 으로 키에 들어간다', () => {
+    const row = counterRow({ name: 'loginPerEmail', subject: 'me@example.com' }, 0);
+    expect(row.key).not.toContain('me@example.com');
+    expect(row.key).toBe(`loginPerEmail:${hashSubject('me@example.com')}:0`);
+    expect(hashSubject('me@example.com')).toMatch(/^[0-9a-f]{32}$/);
+    expect(hashSubject('*')).toBe('*');
+  });
+});
+
+describe('counterQuery', () => {
+  it('카운터를 한 문장에서 원자적으로 올리고, 앞 카운터가 한도를 넘으면 뒤 카운터는 올리지 않는다', () => {
+    const rows = [counterRow({ name: 'askPerIp', subject: '1.2.3.4' }, 0), counterRow({ name: 'askTotal', subject: '*' }, 0)];
+    const query = counterQuery(rows);
+    expect(query.text.match(/INSERT INTO "RateLimitCounter"/g)).toHaveLength(2);
+    expect(query.text.match(/ON CONFLICT \("key"\) DO UPDATE SET "count" = "RateLimitCounter"\."count" \+ 1/g)).toHaveLength(2);
+    expect(query.text).toMatch(/FROM b0 WHERE b0\."count" <= \$\d+::int/);
+    expect(query.text).toContain('SELECT (SELECT "count" FROM b0) AS c0, (SELECT "count" FROM b1) AS c1');
+    expect(query.values).toEqual([rows[0].key, rows[0].expiresAt, rows[1].key, rows[1].expiresAt, RATE_LIMITS.askPerIp.limit]);
+  });
+});
+
+describe('retryAfterSeconds', () => {
+  const rows = [counterRow({ name: 'askPerIp', subject: 'ip' }, 0), counterRow({ name: 'askTotal', subject: '*' }, 0)];
+  it('한도까지는 0', () => {
+    expect(retryAfterSeconds(rows, [30, 40], 0)).toBe(0);
+  });
+  it('한도를 넘은 카운터의 구간 끝까지 남은 초', () => {
+    expect(retryAfterSeconds(rows, [30, 41], 15_000)).toBe(45);
+    expect(retryAfterSeconds(rows, [31, null], 59_500)).toBe(1);
+  });
+});
+
+describe('consumeRateLimit', () => {
+  it('DB 를 한 번만 부르고 한도까지는 통과시킨다', async () => {
+    db.queryRaw.mockResolvedValue([{ c0: 30, c1: 40 }]);
+    const result = await consumeRateLimit([{ name: 'askPerIp', subject: 'ip' }, { name: 'askTotal', subject: '*' }], 0);
+    expect(result).toBeNull();
+    expect(db.queryRaw).toHaveBeenCalledTimes(1);
+    expect(db.queryRaw.mock.calls[0][0].text).toContain('INSERT INTO "RateLimitCounter"');
   });
 
-  it('키마다 따로 센다', () => {
-    const limiter = createLimiter({ limit: 1, windowMs: 60_000 });
-    expect(limiter.hit('a', 0)).toBe(0);
-    expect(limiter.hit('b', 0)).toBe(0);
-    expect(limiter.hit('a', 1)).toBeGreaterThan(0);
+  it('한도를 넘으면 429 와 구간 끝까지의 Retry-After', async () => {
+    db.queryRaw.mockResolvedValue([{ c0: 31, c1: null }]);
+    const result = await consumeRateLimit([{ name: 'askPerIp', subject: 'ip' }, { name: 'askTotal', subject: '*' }], 20_000);
+    expect(result?.status).toBe(429);
+    expect(result?.headers.get('Retry-After')).toBe('40');
   });
 
-  it('남은 시간이 1초 미만이어도 1초로 올려 준다', () => {
-    const limiter = createLimiter({ limit: 1, windowMs: 1000 });
-    limiter.hit('ip', 0);
-    expect(limiter.hit('ip', 999)).toBe(1);
+  it('카운터 테이블이 없거나 DB 오류면 막지 않고 고정 문구만 남긴다', async () => {
+    db.queryRaw.mockRejectedValue(new Prisma.PrismaClientKnownRequestError('relation "RateLimitCounter" does not exist 1.2.3.4', { code: 'P2010', clientVersion: 'test' }));
+    expect(await consumeRateLimit([{ name: 'loginPerIp', subject: '1.2.3.4' }])).toBeNull();
+    expect(warn).toHaveBeenCalledWith('[rate-limit] 카운터를 쓰지 못해 제한 없이 통과: loginPerIp P2010');
   });
 
-  it('키 수가 상한을 넘으면 가장 오래 안 쓴 키부터 버린다', () => {
-    const limiter = createLimiter({ limit: 1, windowMs: 60_000 }, 2);
-    limiter.hit('a', 0);
-    limiter.hit('b', 1);
-    limiter.hit('c', 2); // a 가 버려진다
-    expect(limiter.hit('a', 3)).toBe(0);
-    expect(limiter.hit('c', 4)).toBeGreaterThan(0);
+  it('버킷이 없으면 DB 를 부르지 않는다', async () => {
+    expect(await consumeRateLimit([])).toBeNull();
+    expect(db.queryRaw).not.toHaveBeenCalled();
+  });
+
+  it('가끔 다 쓴 카운터를 지우고, 지우다 실패해도 결과는 그대로다', async () => {
+    const random = vi.spyOn(Math, 'random').mockReturnValue(0);
+    db.queryRaw.mockResolvedValue([{ c0: 1 }]);
+    db.deleteMany.mockRejectedValue(new Error('down'));
+    expect(await consumeRateLimit([{ name: 'answerPerUser', subject: 'u1' }], 5000)).toBeNull();
+    expect(db.deleteMany).toHaveBeenCalledWith({ where: { expiresAt: { lt: new Date(5000) } } });
+    random.mockRestore();
   });
 });
 
@@ -53,27 +109,11 @@ describe('clientIp', () => {
   });
 });
 
-describe('limitByIp', () => {
-  it('IP 를 모르면 메모리 제한을 건너뛴다', () => {
-    const limiter = createLimiter({ limit: 1, windowMs: 60_000 });
-    expect(limitByIp(limiter, req({}))).toBeNull();
-    expect(limitByIp(limiter, req({}))).toBeNull();
-  });
-  it('한도를 넘으면 429 응답을 돌려준다', () => {
-    const limiter = createLimiter({ limit: 1, windowMs: 60_000 });
-    expect(limitByIp(limiter, req({ 'x-real-ip': '1.2.3.4' }))).toBeNull();
-    expect(limitByIp(limiter, req({ 'x-real-ip': '1.2.3.4' }))?.status).toBe(429);
-  });
-});
-
-describe('tooManyRequests · windowStart', () => {
+describe('tooManyRequests', () => {
   it('429 와 정수 Retry-After, 고정 문구를 돌려준다', async () => {
     const response = tooManyRequests(12.2);
     expect(response.status).toBe(429);
     expect(response.headers.get('Retry-After')).toBe('13');
     expect(await response.json()).toEqual({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' });
-  });
-  it('창의 시작 시각은 now - windowMs', () => {
-    expect(windowStart({ limit: 1, windowMs: 60_000 }, 100_000).getTime()).toBe(40_000);
   });
 });

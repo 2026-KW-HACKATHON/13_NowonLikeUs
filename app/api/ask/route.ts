@@ -6,15 +6,13 @@ import { askGemini } from '@/lib/gemini';
 import { groundAnswer } from '@/lib/grounding';
 import { CONTRACT_LABEL, HOUSING_LABEL } from '@/lib/labels';
 import { matchesProfile } from '@/lib/matching';
-import { createLimiter, limitByIp, RATE_LIMITS, tooManyRequests, windowStart } from '@/lib/rateLimit';
+import { clientIp, consumeRateLimit, type RateBucket } from '@/lib/rateLimit';
 import { keywordSearch } from '@/lib/search';
 import { toMatchedTask } from '@/lib/taskView';
 import type { AskResponse, Profile } from '@/lib/types';
 
 /** 한 번에 보여줄 원문 카드 수. AI 모드와 키워드 검색 모두 같다. */
 const MAX_TASKS = 3;
-
-const ipLimiter = createLimiter(RATE_LIMITS.askPerIp);
 
 function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
@@ -60,9 +58,6 @@ async function resolveAskerId(): Promise<string | null> {
 
 /** 외부 AI는 명시 허용 시에만 호출한다. 질문과 최소 상황은 자체 DB에 저장한다. */
 export async function POST(request: Request) {
-  const limited = limitByIp(ipLimiter, request);
-  if (limited) return limited;
-
   // readJsonBody 는 "application/jsonp" 같은 비슷한 형식도 통과시켜, 미디어 타입이 정확히 JSON 일 때만 읽는다.
   const body = isJsonContentType(request) ? await readJsonBody(request) : null;
   // JSON 이 아니거나 깨진 본문도 기존과 같은 400 문구로 답한다(화면 문구 유지).
@@ -89,15 +84,20 @@ export async function POST(request: Request) {
 
   const text = body.text.trim();
   const askerId = await resolveAskerId();
+  // 로그인했으면 계정별, 아니면 IP별로 센 뒤 전체 한도를 센다. 같은 Wi-Fi 의 로그인 사용자끼리는 서로 막지 않는다.
+  const ip = clientIp(request);
+  const buckets: RateBucket[] = [
+    ...(askerId ? [{ name: 'askPerUser', subject: askerId } as const] : ip ? [{ name: 'askPerIp', subject: ip } as const] : []),
+    { name: 'askTotal', subject: '*' },
+  ];
   try {
-    // 인스턴스마다 따로 세는 IP 제한과 달리, 최근 질문 수는 모든 인스턴스가 같은 값을 본다. 왕복을 늘리지 않게 같이 보낸다.
-    const [recentQuestions, rows] = await Promise.all([
-      prisma.question.count({ where: { createdAt: { gte: windowStart(RATE_LIMITS.askTotal) } } }),
+    // 카운터는 DB 한 곳에서 원자적으로 올리므로 인스턴스가 여러 개여도, 동시에 몰려도 한도를 넘겨 통과하지 않는다.
+    // 할 일 목록과 같이 보내 왕복을 늘리지 않는다. 한도를 넘으면 AI 호출과 저장 전에 끝낸다.
+    const [limited, rows] = await Promise.all([
+      consumeRateLimit(buckets),
       prisma.task.findMany({ where: { isPublished: true } }),
     ]);
-    if (recentQuestions >= RATE_LIMITS.askTotal.limit) {
-      return tooManyRequests(RATE_LIMITS.askTotal.windowMs / 1000);
-    }
+    if (limited) return limited;
     const candidates = profile
       ? rows.filter((task) => matchesProfile(task, { ...profile, zone: '' }))
       : rows;
