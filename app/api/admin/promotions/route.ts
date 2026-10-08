@@ -14,13 +14,13 @@ export async function GET() {
   if (admin instanceof Response) return admin;
 
   const rows: QuestionRow[] = await prisma.question.findMany({
-        // 답변이 전부 숨김이면 근거가 없어 큐에 넣지 않는다.
+    // 답변이 전부 숨김이면 근거가 없어 큐에 넣지 않는다.
     where: { status: 'ANSWERED', answers: { some: { isHidden: false } } },
     select: questionSelect(admin.id),
   });
 
   const items = rows.map((row) => {
-      const question = toQuestionItem(row, { viewerId: admin.id, showAsker: true });
+    const question = toQuestionItem(row, { viewerId: admin.id, showAsker: true });
     return { question, totalConfirmations: totalConfirmations(question.answers) };
   });
 
