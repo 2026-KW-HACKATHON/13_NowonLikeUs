@@ -125,3 +125,23 @@ export function parseStatusFilter(value: string | null): QuestionStatus | null |
   if (value === null || value === '') return null;
   return (QUESTION_STATUSES as readonly string[]).includes(value) ? (value as QuestionStatus) : undefined;
 }
+
+/**
+ * '이웃의 질문' 목록 조건. 확인된 답(GROUNDED)을 받은 질문은 빼되,
+ * 질문자가 이웃에게 넘긴(askNeighbors) 질문은 남긴다. status 가 null 이면 상태는 거르지 않는다.
+ */
+export function boardWhere(status: QuestionStatus | null) {
+  return {
+    OR: [{ confidence: { not: 'GROUNDED' as const } }, { askNeighbors: true }],
+    ...(status ? { status } : {}),
+  };
+}
+
+/**
+ * 이 사람이 질문을 이웃에게 넘길 수 있는가. 로그인해서 쓴 질문은 그 사람만,
+ * 비로그인으로 쓴 질문은 질문 id 를 아는 사람(결과 화면을 본 질문자)만 넘길 수 있다.
+ * GROUNDED 질문 id 는 목록에 나오지 않아 질문자 말고는 모른다.
+ */
+export function canAskNeighbors(question: { askerId: string | null }, viewerId: string | null): boolean {
+  return question.askerId === null || question.askerId === viewerId;
+}
