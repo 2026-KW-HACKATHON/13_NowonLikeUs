@@ -110,11 +110,21 @@ describe('keywordSearch 동의어 (실제 시드 · 프로필 후보)', () => {
 
   it('동의어로 넓힌 말은 원래 키워드 하나로 센다', () => {
     const items = [
-      { title: '전입신고 하기', why: '', howTo: '' },
       { title: '가구 대형폐기물 안내', why: '', howTo: '' },
+      { title: '대형폐기물 신고', why: '', howTo: '' },
     ];
-    // 소파가 가구·대형폐기물 둘 다에 걸려도 두 키워드가 걸린 것으로 치지 않는다.
-    expect(keywordSearch(items, '소파 버리기 전입신고', 2).map((item) => item.title)).toEqual(['전입신고 하기', '가구 대형폐기물 안내']);
+    // 소파가 가구·대형폐기물 둘 다에 걸려도 두 키워드로 치지 않으므로, 소파·신고 둘 다 걸린 카드가 앞선다.
+    expect(keywordSearch(items, '소파 버리기 신고', 2).map((item) => item.title)).toEqual(['대형폐기물 신고', '가구 대형폐기물 안내']);
+  });
+
+  // 재활용 질문은 그 주거형태의 재활용 카드 하나만 보여 준다. 본문에 "재활용"이 있는 소형 가전 카드가 따라오면 안 된다.
+  it.each([
+    ['ONE_ROOM', '재활용 버리는 요일 알아두기'],
+    ['APARTMENT', '우리 단지 분리배출 요일 확인하기'],
+  ] as const)('%s 프로필의 흔한 재활용 질문은 재활용 카드만 찾는다', (housingType, expected) => {
+    for (const query of ['분리수거', '분리수거 언제 해요?', '재활용 버리는 날', '페트병 버리는 날', '비닐 버리는 요일', '스티로폼 버리기']) {
+      expect(titles(housingType, query), query).toEqual([expected]);
+    }
   });
 
   // 주민이 가장 흔히 묻는 쓰레기 질문. 카드 제목마다 있는 "버리는"이 대형폐기물 카드를 끌어오면 안 된다.

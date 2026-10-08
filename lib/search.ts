@@ -129,47 +129,68 @@ export function keywordSearch<
   })).filter(({ word, stem }) => !STOPWORDS.has(word) && !STOPWORDS.has(stem) && !SHORT_STOPWORDS.test(word))
     .map((keyword) => ({
       ...keyword,
-      forms: [keyword.word, keyword.stem, ...synonymsOf(SYNONYMS.has(keyword.stem) ? keyword.stem : keyword.word)],
+      forms: [keyword.word, keyword.stem],
+      titleForms: synonymsOf(SYNONYMS.has(keyword.stem) ? keyword.stem : keyword.word),
       weak: DISPOSAL_VERB.test(keyword.stem),
     }))
     .concat(PHRASE_KEYWORDS
       .filter(([pattern]) => pattern.test(normalizedQuery))
-      .map(([, word]) => ({ word, stem: word, forms: [word], weak: false })));
+      .map(([, word]) => ({ word, stem: word, forms: [], titleForms: [word], weak: false })));
 
-  // "버리는" 없이 먼저 찾고, 아무것도 없을 때만 넣어서 다시 찾는다.
-  // 기숙사처럼 쓰레기 카드가 하나뿐인 경우 "비닐 버리는 요일"이 그 카드를 계속 찾게 한다.
-  const strongKeywords = keywords.filter(({ weak }) => !weak);
-  const result = rankItems(items, strongKeywords, limit);
-  return result.length > 0 || strongKeywords.length === keywords.length ? result : rankItems(items, keywords, limit);
+  // 좁은 조건부터 찾고, 결과가 없을 때만 조건을 풀어 다시 찾는다.
+  // 1) 동의어가 있는 주제어("재활용", "분리수거")는 제목에서만 찾고 "버리는"은 쓰지 않는다.
+  // 2) 주제어도 본문에서 찾는다. 기숙사 카드처럼 제목에 주제어가 없는 카드를 위해서다.
+  // 3) "버리는"까지 넣는다. 기숙사처럼 쓰레기 카드가 하나뿐인 경우 "비닐 버리는 요일"이 그 카드를 계속 찾게 한다.
+  for (const { titleOnly, withWeak } of [
+    { titleOnly: true, withWeak: false }, { titleOnly: false, withWeak: false }, { titleOnly: false, withWeak: true },
+  ]) {
+    const result = rankItems(items, keywords.filter(({ weak }) => withWeak || !weak), limit, titleOnly);
+    if (result.length > 0) return result;
+  }
+  return [];
 }
 
 function rankItems<T extends { title: string; why: string; howTo: string }>(
   items: T[],
-  keywords: { word: string; stem: string; forms: string[] }[],
+  keywords: { word: string; stem: string; forms: string[]; titleForms: string[] }[],
   limit: number,
+  topicTitleOnly: boolean,
 ): T[] {
   // 서술부와 한 글자 키워드는 뜻이 약해 "키워드가 둘 이상인 질문"을 판단할 때 세지 않는다.
   const meaningfulCount = new Set(keywords
     .filter(({ word, stem }) => stem.length > 1 && !PREDICATE.test(word))
     .map(({ stem }) => stem)).size;
 
-  const matchedStems = (field: string, minLength = 1) => new Set(keywords.filter(({ stem, forms }) =>
-    stem.length >= minLength && forms.some((form) => field.includes(form)),
-  ).map(({ stem }) => stem));
+  const topicStems = new Set(keywords.filter(({ titleForms }) => titleForms.length > 0).map(({ stem }) => stem));
 
-  return items
+  // 질문에 쓴 말은 카드 어디서든 찾고, 동의어로 넓힌 말은 제목에서만 찾는다.
+  // "분리수거"가 본문에 "재활용"이 적힌 소형 가전 카드까지 끌어오지 않게 한다.
+  const matchedStems = (field: string, title: string, minLength = 1) => new Set(keywords.filter(({ stem, forms, titleForms }) => {
+    if (stem.length < minLength) return false;
+    const ownField = topicTitleOnly && titleForms.length > 0 ? title : field;
+    return forms.some((form) => ownField.includes(form)) || titleForms.some((form) => title.includes(form));
+  }).map(({ stem }) => stem));
+
+  const scored = items
     .map((item) => {
       const title = item.title.toLowerCase();
       const text = [title, item.why.toLowerCase(), item.howTo.toLowerCase()].join('\n');
-      const score = matchedStems(text).size;
-      const strongScore = matchedStems(text, 2).size;
+      const score = matchedStems(text, title).size;
+      const strongScore = matchedStems(text, title, 2).size;
       // 한 글자 키워드는 "일"이 "확정일자"에 걸리듯 우연히 겹치기 쉬워 제목 점수에서 뺀다.
-      const titleScore = matchedStems(title, 2).size;
+      const titleScore = matchedStems(title, title, 2).size;
+      const topicScore = [...matchedStems(text, title, 2)].filter((stem) => topicStems.has(stem)).length;
 
-      return { item, score, strongScore, titleScore };
+      return { item, score, strongScore, titleScore, topicScore };
     })
     // 인정 여부는 두 글자 이상 키워드로만 정한다. 하나만 걸렸으면 의미 있는 키워드가 하나뿐인 질문이거나 제목에 걸려야 한다.
-    .filter(({ strongScore, titleScore }) => strongScore > 1 || (strongScore === 1 && (meaningfulCount <= 1 || titleScore > 0)))
+    .filter(({ strongScore, titleScore }) => strongScore > 1 || (strongScore === 1 && (meaningfulCount <= 1 || titleScore > 0)));
+
+  // 동의어 표의 주제어("비닐", "분리수거", "소파")가 걸린 카드가 있으면, 주제어가 하나도 안 걸린 카드는 뺀다.
+  // "비닐 버리는 요일"에 "요일"만 걸린 소형 가전 카드가 섞이지 않게 한다.
+  const hasTopic = scored.some(({ topicScore }) => topicScore > 0);
+  return scored
+    .filter(({ topicScore }) => !hasTopic || topicScore > 0)
     .sort((a, b) => b.strongScore - a.strongScore || b.titleScore - a.titleScore || b.score - a.score)
     .slice(0, Math.floor(limit))
     .map(({ item }) => item);
