@@ -195,3 +195,44 @@ docs/                    기획서 · 설계안 · 승격 흐름 · 구현 계�
 | 백엔드 · DB · 발표 | 우희태 |
 | AI 파이프라인 | 김권섭 |
 | 데이터 조사 | 박용민 |
+
+## 오픈소스 · 출처
+
+이 프로젝트는 아래 오픈소스를 각 라이선스에 따라 사용합니다. 코드를 복사해 넣지 않고 npm 패키지로만 설치했습니다.
+
+| 이름 | 용도 | 라이선스 |
+|---|---|---|
+| [Next.js](https://github.com/vercel/next.js) 16.3.6 | 웹 프레임워크 (App Router) | MIT |
+| [React](https://github.com/facebook/react) · React DOM 19.2.8 | 화면 구성 | MIT |
+| [Prisma](https://github.com/prisma/prisma) 6.19.3 | DB 스키마 · 쿼리 | Apache-2.0 |
+| [bcryptjs](https://github.com/dcodeIO/bcrypt.js) 3 | 비밀번호 해시 | BSD-3-Clause |
+| [jose](https://github.com/panva/jose) 6 | 로그인 세션 JWT 서명 · 검증 | MIT |
+| [TypeScript](https://github.com/microsoft/TypeScript) 5 | 타입 검사 | Apache-2.0 |
+| [Vitest](https://github.com/vitest-dev/vitest) 5 | 단위 테스트 | MIT |
+| [tsx](https://github.com/privatenumber/tsx) 4 | 시드 · 관리 스크립트 실행 | MIT |
+| [ESLint](https://github.com/eslint/eslint) 9 · eslint-config-next | 코드 검사 | MIT |
+| [Noto Sans KR](https://fonts.google.com/noto/specimen/Noto+Sans+KR) | 본문 글꼴 (`next/font`로 자체 호스팅) | SIL OFL 1.1 |
+
+**외부 서비스**
+
+| 서비스 | 용도 |
+|---|---|
+| [Google Gemini API](https://ai.google.dev/) (Google AI Studio) | 질문에 맞는 근거 카드 id 선택 — 문장 생성에는 쓰지 않음 |
+| [Vercel](https://vercel.com/) | 배포 · 호스팅 |
+| [Neon](https://neon.tech/) | PostgreSQL 호스팅 |
+
+**데이터 출처**
+
+할 일 17건의 내용은 아래 공공 자료와 전화 확인으로 팀이 직접 조사했습니다. 항목별 출처 원문은 [`prisma/seed-data.ts`](prisma/seed-data.ts)의 `sourceNote`에 그대로 남아 있습니다.
+
+- [정부24](https://www.gov.kr/) — 전입신고
+- [찾기쉬운 생활법령정보](https://www.easylaw.go.kr/) — 주택임대차 이사 후 체크리스트
+- [국세청](https://www.nts.go.kr/) — 월세액 세액공제
+- [국가법령정보센터](https://www.law.go.kr/) — 주민등록법 시행령, 동물보호법 · 시행령
+- [노원구청](https://www.nowon.kr/) — 생활폐기물 · 재활용품 · 음식물류폐기물 · 대형생활폐기물 배출 안내, 스마트클린 노원
+- 서울시 종량제물품 판매소 위치안내
+- 노원구시설관리공단 — 거주자우선주차장 신청 · 배정 안내
+- 국가동물보호정보시스템 — 동물등록 대행기관 조회
+- 농림축산식품부 — 반려동물 펫티켓
+- 월계1동 주민센터 · 광운대학교 행복기숙사 빛솔재 공식 홈페이지
+- 전화 확인 (2026-10-02) — 노원구청 자원순환과, 빛솔재 행정실
