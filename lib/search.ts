@@ -42,7 +42,7 @@ const SYNONYMS = new Map(SYNONYM_GROUPS.flatMap(([words, expanded]) => words.map
  * 검증된 대형 폐가전 카드가 시드에 생기면 이 규칙 대신 그 카드로 잇는다.
  */
 const UNVERIFIED_DISPOSAL_ITEM = /냉장고|세탁기|에어컨|텔레비전|티비|tv|건조기|대형가전|대형폐가전/u;
-const DISPOSAL = /버리|버려|버릴|버린|폐기|배출|수거|처분|내놓/u;
+const DISPOSAL = /버리|버려|버릴|버린|버림|폐기|배출|수거|처분|처리|재활용|내놓/u;
 
 /**
  * Gemini 호출 실패 시 사용할 키워드 검색.
