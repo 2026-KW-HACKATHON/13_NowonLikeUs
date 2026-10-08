@@ -1463,26 +1463,145 @@ button:disabled {
 
 /* ---------- 표지 (/) ---------- */
 
+/*
+ * 표지만 다른 화면보다 넓게 쓴다(첫인상 · 전시 화면). 나머지 화면은 640px 그대로.
+ * 표지는 에디토리얼 선 대신 둥근 면 · 은은한 바탕을 쓰지만, 글자 대비(AAA)와 누를 자리(48px+)는 같은 기준이다.
+ */
+:root {
+  --cover-from: #fbfaf6;
+  --cover-to: #edf3ec;
+  --cover-blob-green: #e1ebdf;
+  --cover-blob-beige: #f3e6d3;
+  --cover-house-opacity: 0.34;
+  --give-bg: #eef4ee;
+  --give-badge: #dbe8dc;
+  --cover-shadow: 0 8px 24px rgba(28, 60, 40, 0.08);
+}
+
+@media (prefers-color-scheme: dark) {
+  :root {
+    --cover-from: #1a1c19;
+    --cover-to: #17241d;
+    --cover-blob-green: #1f2e25;
+    --cover-blob-beige: #2c261d;
+    --cover-house-opacity: 0.2;
+    --give-bg: #1a231e;
+    --give-badge: #26392d;
+    --cover-shadow: none;
+  }
+}
+
+.main--cover {
+  max-width: 1080px;
+}
+
+.icon {
+  flex: none;
+  width: 1.15em;
+  height: 1.15em;
+}
+
+.icon--chevron {
+  width: 1em;
+  height: 1em;
+}
+
 .cover {
-  padding: 0 0 var(--space-6);
-  border-bottom: 2px solid var(--rule);
+  position: relative;
+  overflow: hidden;
+  isolation: isolate;
+  padding: clamp(28px, 5vw, 56px) clamp(20px, 5vw, 56px);
+  border-radius: 24px;
+  background: linear-gradient(135deg, var(--cover-from) 30%, var(--cover-to));
+}
+
+/* 배경 그림: 흐린 집 로고와 동그란 면 몇 개. 글자 뒤에 깔린다. */
+.cover__art {
+  position: absolute;
+  inset: 0;
+  z-index: -1;
+  pointer-events: none;
+}
+
+.cover__blob {
+  position: absolute;
+  border-radius: 50%;
+}
+
+.cover__blob--a {
+  top: -60px;
+  right: -40px;
+  width: 200px;
+  height: 200px;
+  background: var(--cover-blob-green);
+}
+
+.cover__blob--b {
+  bottom: -120px;
+  right: 8%;
+  width: 360px;
+  height: 220px;
+  background: var(--cover-blob-beige);
+  opacity: 0.7;
+}
+
+.cover__blob--c {
+  top: 14%;
+  left: 62%;
+  width: 36px;
+  height: 36px;
+  background: var(--cover-blob-beige);
+}
+
+.cover__house {
+  position: absolute;
+  top: 12%;
+  right: -2%;
+  width: min(50%, 500px);
+  height: auto;
+  opacity: var(--cover-house-opacity);
+}
+
+.cover__body {
+  max-width: 600px;
 }
 
 .cover__eyebrow {
-  margin: 0 0 var(--space-2);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  margin: 0 0 var(--space-3);
+  padding: 6px 16px 6px 12px;
+  border-radius: 999px;
+  background: var(--accent-soft);
+  color: var(--accent);
   font-size: 15px;
   font-weight: 900;
-  letter-spacing: 0.04em;
-  color: var(--accent);
 }
 
 /* 표지만의 큰 제목. 화면 폭에 따라 커지되 작은 휴대폰에서도 두 줄 안에 든다. */
 .cover__title {
   margin: 0 0 var(--space-3);
-  font-size: clamp(40px, 12vw, 60px);
+  font-size: clamp(40px, 10vw, 72px);
   font-weight: 900;
   line-height: 1.12;
   letter-spacing: -0.045em;
+}
+
+.cover__title-accent {
+  position: relative;
+  color: var(--accent);
+  white-space: nowrap;
+}
+
+.cover__spark {
+  position: absolute;
+  top: -0.2em;
+  right: -0.55em;
+  width: 0.5em;
+  height: 0.5em;
+  color: #c9a37a;
+  stroke-width: 2.6;
 }
 
 .cover__lead {
@@ -1500,69 +1619,190 @@ button:disabled {
   list-style: none;
 }
 
-/* 할 일 목록의 색띠와 같은 색 — 표지에서 본 분류가 목록에서 그대로 이어진다. */
+/* 색 이름표. 글자 · 아이콘이 같이 붙어 색만으로 구분하지 않는다. */
 .cover__cat {
-  padding: 4px 14px 4px 10px;
-  border-left: 5px solid var(--cat);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 18px 8px 14px;
+  border-radius: 999px;
   background: var(--cat-soft);
   color: var(--cat);
-  font-size: 15px;
+  font-size: 16px;
   font-weight: 900;
 }
 
 .cover__start {
-  min-height: 60px;
-  font-size: 19px;
+  gap: var(--space-1);
+  max-width: 560px;
+  min-height: 64px;
+  border-radius: 14px;
+  font-size: 20px;
+  box-shadow: var(--cover-shadow);
 }
 
 .cover__note {
+  max-width: 560px;
   margin: var(--space-2) 0 0;
   font-size: 15px;
   color: var(--text-soft);
   text-align: center;
 }
 
+/* 휴대폰 · 태블릿: 글자 옆에 집 그림을 둘 폭이 없다. 제목 뒤 오른쪽 위로 옮기고 더 흐리게 해 글자를 가리지 않는다. */
+@media (max-width: 899px) {
+  .cover__house {
+    top: -4%;
+    right: -22%;
+    width: min(72%, 420px);
+    opacity: calc(var(--cover-house-opacity) * 0.5);
+  }
+
+  .cover__blob--c {
+    display: none;
+  }
+}
+
+@media (max-width: 719px) {
+  .cover__lead br {
+    display: none;
+  }
+}
+
+/* ---------- 표지 아래: 이웃의 질문 ---------- */
+
 .cover-give {
-  padding: var(--space-5) 0 0;
+  display: grid;
+  gap: var(--space-5);
+  align-items: center;
+  margin-top: var(--space-4);
+  padding: clamp(24px, 5vw, 48px);
+  border-radius: 24px;
+  background: var(--give-bg);
+}
+
+/* 오른쪽 질문 목록은 실제 질문이 있을 때만 생긴다. 없으면 글자가 한 칸을 다 쓴다. */
+@media (min-width: 880px) {
+  .cover-give--with-list {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 400px);
+  }
+}
+
+.cover-give__badge {
+  display: inline-block;
+  margin: 0 0 var(--space-2);
+  padding: 4px 14px;
+  border-radius: 999px;
+  background: var(--give-badge);
+  font-size: 15px;
+  font-weight: 900;
 }
 
 .cover-give__title {
-  margin: 0 0 var(--space-1);
-  font-size: 19px;
+  margin: 0 0 var(--space-2);
+  font-size: clamp(24px, 4vw, 34px);
   font-weight: 900;
-  letter-spacing: -0.02em;
+  line-height: 1.3;
+  letter-spacing: -0.03em;
+}
+
+.cover-give__accent {
+  color: var(--accent);
 }
 
 .cover-give__body {
-  margin: 0 0 var(--space-2);
+  margin: 0 0 var(--space-4);
+  font-size: 19px;
   color: var(--text-soft);
 }
 
-/* 표지 머리: 제목 왼쪽, 로고는 제목과 오른쪽 끝 사이 가운데. 320px 휴대폰에서도 "처음 왔나요?"가 한 줄에 들도록 제목 · 로고가 같이 줄어든다. */
-.cover__head {
-  display: flex;
-  align-items: center;
-  margin: 0 0 var(--space-3);
+.cover-give__cta {
+  display: inline-flex;
+  gap: var(--space-1);
+  min-width: min(100%, 320px);
+  min-height: 60px;
+  padding: 0 var(--space-4);
+  border-radius: 14px;
+  font-size: 19px;
 }
 
-.cover__heading {
+.cover-give__questions {
+  display: grid;
+  gap: var(--space-2);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+/* 넓은 화면에서는 카드를 조금씩 엇갈리게 쌓는다. */
+@media (min-width: 880px) {
+  .cover-give__questions li:nth-child(2) {
+    transform: translateX(-14px);
+  }
+
+  .cover-give__questions li:nth-child(3) {
+    transform: translateX(-28px);
+  }
+}
+
+.cover-q {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+  min-height: 76px;
+  padding: 14px 18px;
+  border-radius: 16px;
+  background: var(--surface);
+  box-shadow: var(--cover-shadow);
+  color: var(--text);
+  text-decoration: none;
+  transition: transform 150ms ease;
+}
+
+.cover-q:hover {
+  transform: translateY(-2px);
+}
+
+.cover-q__avatar {
+  display: grid;
+  place-items: center;
+  flex: none;
+  width: 48px;
+  height: 48px;
+  border-radius: 50%;
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.cover-give__questions li:nth-child(2) .cover-q__avatar {
+  background: var(--cat-waste-soft);
+  color: var(--cat-waste);
+}
+
+.cover-give__questions li:nth-child(3) .cover-q__avatar {
+  background: var(--cat-admin-soft);
+  color: var(--cat-admin);
+}
+
+.cover-q__avatar .icon {
+  width: 26px;
+  height: 26px;
+}
+
+.cover-q__text {
+  display: grid;
   min-width: 0;
 }
 
-.cover__head .cover__title {
-  margin: 0;
-  font-size: clamp(32px, 10vw, 60px);
+.cover-q__title {
+  overflow: hidden;
+  font-size: 17px;
+  font-weight: 700;
+  white-space: nowrap;
+  text-overflow: ellipsis;
 }
 
-/* 표지 로고. 초록 · 베이지는 어두운 바탕에서 묻히므로 밝은 판 위에 올린다(다크 모드에서도 같은 판). */
-.cover__logo {
-  flex: none;
-  display: block;
-  width: clamp(72px, 24vw, 140px);
-  /* 양쪽 auto: 제목 끝 ~ 오른쪽 끝 사이 남는 폭의 한가운데에 놓인다. */
-  margin-inline: auto;
-  height: auto;
-  padding: 6px;
-  border-radius: var(--radius);
-  background: #f7f7f5;
+.cover-q__meta {
+  font-size: 15px;
+  color: var(--text-soft);
 }
