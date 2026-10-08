@@ -117,6 +117,21 @@ describe('keywordSearch 동의어 (실제 시드 · 프로필 후보)', () => {
     expect(keywordSearch(items, '소파 버리기 전입신고', 2).map((item) => item.title)).toEqual(['전입신고 하기', '가구 대형폐기물 안내']);
   });
 
+  // 주민이 가장 흔히 묻는 쓰레기 질문. 카드 제목마다 있는 "버리는"이 대형폐기물 카드를 끌어오면 안 된다.
+  it.each([
+    ['ONE_ROOM', '쓰레기 버리는 날', '생활쓰레기 버리는 날·시간 알아두기'],
+    ['ONE_ROOM', '스티로폼 버리기', '재활용 버리는 요일 알아두기'],
+    ['ONE_ROOM', '음식물 쓰레기 버리는 법', '음식물쓰레기 버리는 방법 알아두기'],
+    ['APARTMENT', '재활용 버리는 날', '우리 단지 분리배출 요일 확인하기'],
+    ['APARTMENT', '페트병 버리는 날', '우리 단지 분리배출 요일 확인하기'],
+    ['APARTMENT', '비닐 버리는 요일', '우리 단지 분리배출 요일 확인하기'],
+    ['APARTMENT', '음식물 쓰레기 버리는 법', '우리 단지 음식물쓰레기 방식 확인하기'],
+  ] as const)('%s 프로필의 흔한 쓰레기 질문은 맞는 카드를 먼저 찾고 대형폐기물 카드를 섞지 않는다: %s', (housingType, query, expected) => {
+    const result = titles(housingType, query);
+    expect(result[0]).toBe(expected);
+    expect(result).not.toContain('큰 가구 버리는 방법 알아두기 (대형폐기물)');
+  });
+
   it.each([
     ['APARTMENT', '분리배출', ['우리 단지 분리배출 요일 확인하기']],
     ['ONE_ROOM', '반려견 등록', ['반려견 동물등록하기']],

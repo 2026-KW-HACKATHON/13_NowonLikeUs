@@ -17,6 +17,13 @@ const PARTICLE = '(으로|에서|에게|한테|부터|까지|처럼|보다|은|�
 const SHORT_STOPWORDS = new RegExp(`^(뭐|곳|것|거|때|몇|일)${PARTICLE}$`, 'u');
 
 /**
+ * "버리는", "버리기", "버려요" 같은 버리다 활용형. 쓰레기 카드 제목 대부분에 있어 어느 카드인지 가려 주지 못하고,
+ * "쓰레기 버리는 날"에 대형폐기물 카드가 섞이게 한다. 다른 키워드로 찾은 결과가 없을 때만 키워드로 쓴다.
+ * 버리는 질문인지 판단에는 계속 쓴다.
+ */
+const DISPOSAL_VERB = /^버(리|려|릴|린|림)/u;
+
+/**
  * 동사·형용사 활용형으로 끝나는 말. "지키려면", "버려요"처럼 질문의 서술부라 카드 문구와 잘 맞지 않는다.
  * 점수에는 그대로 쓰지만, 제목 규칙을 적용할지 정하는 키워드 수에서는 뺀다.
  */
@@ -59,6 +66,9 @@ const SYNONYM_GROUPS: SynonymGroup[] = [
   { words: ['소파', '쇼파', '침대', '책상', '옷장', '매트리스'], expanded: ['가구', '대형폐기물'], disposalOnly: true },
   { words: ['전자레인지', '드라이기'], expanded: ['작은 가전'], disposalOnly: true },
   { words: ['분리수거'], expanded: ['분리배출', '재활용'] },
+  // 아파트 카드는 "분리배출"로, 일반주택 카드는 "재활용"과 품목 이름으로 적혀 있다.
+  { words: ['재활용'], expanded: ['분리배출'] },
+  { words: ['페트병', '비닐', '스티로폼', '플라스틱', '박스'], expanded: ['재활용', '분리배출'] },
   { words: ['강아지', '애완견'], expanded: ['반려견'] },
 ];
 
@@ -120,11 +130,24 @@ export function keywordSearch<
     .map((keyword) => ({
       ...keyword,
       forms: [keyword.word, keyword.stem, ...synonymsOf(SYNONYMS.has(keyword.stem) ? keyword.stem : keyword.word)],
+      weak: DISPOSAL_VERB.test(keyword.stem),
     }))
     .concat(PHRASE_KEYWORDS
       .filter(([pattern]) => pattern.test(normalizedQuery))
-      .map(([, word]) => ({ word, stem: word, forms: [word] })));
+      .map(([, word]) => ({ word, stem: word, forms: [word], weak: false })));
 
+  // "버리는" 없이 먼저 찾고, 아무것도 없을 때만 넣어서 다시 찾는다.
+  // 기숙사처럼 쓰레기 카드가 하나뿐인 경우 "비닐 버리는 요일"이 그 카드를 계속 찾게 한다.
+  const strongKeywords = keywords.filter(({ weak }) => !weak);
+  const result = rankItems(items, strongKeywords, limit);
+  return result.length > 0 || strongKeywords.length === keywords.length ? result : rankItems(items, keywords, limit);
+}
+
+function rankItems<T extends { title: string; why: string; howTo: string }>(
+  items: T[],
+  keywords: { word: string; stem: string; forms: string[] }[],
+  limit: number,
+): T[] {
   // 서술부와 한 글자 키워드는 뜻이 약해 "키워드가 둘 이상인 질문"을 판단할 때 세지 않는다.
   const meaningfulCount = new Set(keywords
     .filter(({ word, stem }) => stem.length > 1 && !PREDICATE.test(word))
