@@ -37,6 +37,9 @@ describe('keywordSearch 동의어 (실제 시드 · 프로필 후보)', () => {
 
   it.each([
     ['ONE_ROOM', '소파 버리기'], ['ONE_ROOM', '침대를 버리려면'], ['APARTMENT', '매트리스 버리기'],
+    // 버린다는 말 대신 자연스럽게 쓰는 폐기 표현
+    ['ONE_ROOM', '소파 치우기'], ['ONE_ROOM', '침대 없애기'], ['VILLA', '책상 내다 놓기'], ['OFFICETEL', '쇼파 치우려면'],
+    ['APARTMENT', '옷장 회수 신청'], ['APARTMENT', '매트리스 없애고 싶어요'],
   ] as const)('%s 프로필에서 가구 이름으로 대형폐기물 카드를 찾는다: %s', (housingType, query) => {
     expect(titles(housingType, query)[0]).toBe('큰 가구 버리는 방법 알아두기 (대형폐기물)');
   });
@@ -74,6 +77,10 @@ describe('keywordSearch 동의어 (실제 시드 · 프로필 후보)', () => {
     // 카드에 소형 가전으로 적힌 품목은 그 카드로 잇는다.
     ['ONE_ROOM', '전자레인지 버리기', '작은 가전 버리는 요일 알아두기'],
     ['APARTMENT', '드라이기 버리려면', '작은 가전은 관리사무소에 먼저 물어보기'],
+    ['ONE_ROOM', '전자레인지 치우기', '작은 가전 버리는 요일 알아두기'],
+    ['VILLA', '드라이기 없애려면', '작은 가전 버리는 요일 알아두기'],
+    ['APARTMENT', '전자레인지 회수', '작은 가전은 관리사무소에 먼저 물어보기'],
+    ['ONE_ROOM', '전자레인지 내다 놓는 날', '작은 가전 버리는 요일 알아두기'],
   ] as const)('%s 프로필의 작은 가전 질문은 계속 작은 가전 카드를 찾는다: %s', (housingType, query, expected) => {
     expect(titles(housingType, query)[0]).toBe(expected);
   });
