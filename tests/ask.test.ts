@@ -5,7 +5,10 @@ vi.mock('server-only', () => ({}));
 const db = vi.hoisted(() => ({ findMany: vi.fn(), create: vi.fn(), findUser: vi.fn() }));
 vi.mock('@/lib/db', () => ({ prisma: { task: { findMany: db.findMany }, question: { create: db.create }, user: { findUnique: db.findUser } } }));
 const session = vi.hoisted(() => ({ getSessionUser: vi.fn() }));
-vi.mock('@/lib/auth', () => ({ getSessionUser: session.getSessionUser }));
+vi.mock('@/lib/auth', async (importOriginal) => ({
+  readJsonBody: (await importOriginal<typeof import('@/lib/auth')>()).readJsonBody,
+  getSessionUser: session.getSessionUser,
+}));
 import { POST } from '@/app/api/ask/route';
 
 const task: Task = {
@@ -47,7 +50,11 @@ const carOnlyTask: Task = {
 };
 const profile = { housingType: 'ONE_ROOM', contractType: 'MONTHLY', moveInDate: '2026-10-01', zone: '비공개 구역', hasCar: true, hasPet: true, isStudent: true };
 const fetchMock = vi.fn<typeof fetch>();
-const request = (body: unknown) => new Request('http://localhost/api/ask', { method: 'POST', body: JSON.stringify(body) });
+const rawRequest = (body: string, contentType = 'application/json') => new Request('http://localhost/api/ask', {
+  method: 'POST', headers: { 'Content-Type': contentType }, body,
+});
+const request = (body: unknown) => rawRequest(JSON.stringify(body));
+const warn = vi.spyOn(console, 'warn');
 const ai = (sourceIds = ['task:a'], confidence = 'GROUNDED') => Response.json({
   candidates: [{ finishReason: 'STOP', content: { parts: [{ text: JSON.stringify({ sourceIds, confidence }) }] } }],
 });
@@ -60,6 +67,7 @@ beforeEach(() => {
   db.create.mockResolvedValue({ id: 'q-test' });
   session.getSessionUser.mockResolvedValue(null);
   db.findUser.mockImplementation(({ where }: { where: { id: string } }) => Promise.resolve({ id: where.id }));
+  warn.mockImplementation(() => {});
 });
 afterEach(() => { vi.unstubAllEnvs(); vi.unstubAllGlobals(); vi.resetAllMocks(); });
 
@@ -282,8 +290,14 @@ describe('POST /api/ask', () => {
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it('깨진 JSON은 400이다', async () => {
-    expect((await POST(new Request('http://localhost/api/ask', { method: 'POST', body: '{' }))).status).toBe(400);
+  it.each([
+    ['깨진 JSON', '{', 'application/json'],
+    ['JSON이 아닌 Content-Type', JSON.stringify({ text: '전입신고' }), 'text/plain'],
+  ])('%s은 기존과 같은 400 응답이고 DB에 접근하지 않는다', async (_label, body, contentType) => {
+    const response = await POST(rawRequest(body, contentType));
+    expect(response.status).toBe(400);
+    expect(await response.json()).toEqual({ error: '질문을 1~1000자로 입력해 주세요.' });
+    expect(db.findMany).not.toHaveBeenCalled();
   });
 
   it('DB 실패 시 성공한 것처럼 응답하거나 내부 오류를 노출하지 않는다', async () => {
@@ -291,6 +305,15 @@ describe('POST /api/ask', () => {
     const response = await POST(request({ text: '전입신고' }));
     expect(response.status).toBe(503);
     expect(await response.text()).not.toContain('private');
+  });
+
+  it('처리 실패는 오류 종류만 로그에 남기고 질문·오류 메시지는 남기지 않는다', async () => {
+    db.create.mockRejectedValueOnce(Object.assign(new Error('private database connection'), { code: 'P1001' }));
+    await POST(request({ text: '비밀 질문 전입신고' }));
+    expect(warn).toHaveBeenCalledWith('[ask] 질문 처리 실패: Error P1001');
+    const logged = warn.mock.calls.flat().join(' ');
+    expect(logged).not.toContain('비밀 질문');
+    expect(logged).not.toContain('private');
   });
   // 질문자 기록: 로그인했으면 자체 DB 에만 남기고, 외부 AI 요청에는 넣지 않는다.
   it('로그인한 사용자의 질문은 askerId 를 저장한다', async () => {

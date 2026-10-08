@@ -1,4 +1,4 @@
-import { getSessionUser } from '@/lib/auth';
+import { getSessionUser, readJsonBody } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { askGemini } from '@/lib/gemini';
 import { groundAnswer } from '@/lib/grounding';
@@ -35,8 +35,9 @@ async function resolveAskerId(): Promise<string | null> {
 
 /** 외부 AI는 명시 허용 시에만 호출한다. 질문과 최소 상황은 자체 DB에 저장한다. */
 export async function POST(request: Request) {
-  const body: unknown = await request.json().catch(() => null);
-  if (!isRecord(body) || typeof body.text !== 'string' || !body.text.trim() || body.text.length > 1000) {
+  const body = await readJsonBody(request);
+  // JSON 이 아니거나 깨진 본문도 기존과 같은 400 문구로 답한다(화면 문구 유지).
+  if (body instanceof Response || !isRecord(body) || typeof body.text !== 'string' || !body.text.trim() || body.text.length > 1000) {
     return Response.json({ error: '질문을 1~1000자로 입력해 주세요.' }, { status: 400 });
   }
 
@@ -95,8 +96,10 @@ export async function POST(request: Request) {
       tasks: selected.map((t) => toMatchedTask(t, profile?.moveInDate ?? null, today)),
     };
     return Response.json(response, { headers: { 'Cache-Control': 'no-store' } });
-  } catch {
-    // 질문 본문·프로필·DB 접속 정보는 로그나 오류 응답에 노출하지 않는다.
+  } catch (error) {
+    // 질문 본문·프로필·DB 접속 정보는 로그나 오류 응답에 노출하지 않는다. 오류 이름과 코드만 남긴다.
+    const code = isRecord(error) && typeof error.code === 'string' ? ` ${error.code}` : '';
+    console.warn(`[ask] 질문 처리 실패: ${error instanceof Error ? error.name : 'unknown'}${code}`);
     return Response.json({ error: '질문을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.' }, { status: 503 });
   }
 }

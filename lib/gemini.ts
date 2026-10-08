@@ -17,6 +17,12 @@ function isRecord(value: unknown): value is Record<string, unknown> {
   return typeof value === 'object' && value !== null && !Array.isArray(value);
 }
 
+/** 실패 종류만 남긴다. 질문·지식·프로필·키·응답 본문은 로그에 넣지 않는다. */
+function fail(kind: string): null {
+  console.warn(`[gemini] 호출 실패: ${kind}`);
+  return null;
+}
+
 /**
  * 호출/형식 검증 실패는 null로 반환한다. 호출자가 키워드 검색으로 폴백한다.
  * 반환값은 미검증 AI 선택 결과다. 응답·저장 전 반드시 groundAnswer를 거쳐야 한다.
@@ -27,7 +33,7 @@ export async function askGemini(
   profileLine: string,
 ): Promise<GeminiAnswer | null> {
   const apiKey = process.env.GEMINI_API_KEY?.trim();
-  if (!apiKey) return null;
+  if (!apiKey) return fail('missing-key');
 
   const model = process.env.GEMINI_MODEL?.trim() || 'gemini-3.1-flash-lite';
   const controller = new AbortController();
@@ -59,14 +65,18 @@ export async function askGemini(
         }),
       },
     );
-    if (!response.ok) return null;
+    if (!response.ok) return fail(`http ${response.status}`);
 
     const payload: unknown = await response.json();
-    if (!isRecord(payload) || !Array.isArray(payload.candidates)) return null;
+    if (!isRecord(payload) || !Array.isArray(payload.candidates)) return fail('empty');
     const candidate: unknown = payload.candidates[0];
-    if (!isRecord(candidate) || candidate.finishReason !== 'STOP' || !isRecord(candidate.content)) return null;
+    if (!isRecord(candidate)) return fail('empty');
+    if (candidate.finishReason !== 'STOP') {
+      return fail(`finish ${typeof candidate.finishReason === 'string' ? candidate.finishReason : 'missing'}`);
+    }
+    if (!isRecord(candidate.content)) return fail('empty');
     const parts = candidate.content.parts;
-    if (!Array.isArray(parts)) return null;
+    if (!Array.isArray(parts)) return fail('empty');
     const text = parts
       .filter((part: unknown) => isRecord(part) && part.thought !== true && typeof part.text === 'string')
       .map((part) => part.text)
@@ -76,11 +86,12 @@ export async function askGemini(
       !isRecord(value) || !Array.isArray(value.sourceIds) ||
       !value.sourceIds.every((id: unknown) => typeof id === 'string') ||
       (value.confidence !== 'GROUNDED' && value.confidence !== 'PARTIAL' && value.confidence !== 'UNKNOWN')
-    ) return null;
+    ) return fail('schema');
 
     return { sourceIds: value.sourceIds, confidence: value.confidence };
-  } catch {
-    return null;
+  } catch (error) {
+    if (controller.signal.aborted) return fail('timeout');
+    return fail(error instanceof SyntaxError ? 'parse' : 'network');
   } finally {
     clearTimeout(timeout);
   }
