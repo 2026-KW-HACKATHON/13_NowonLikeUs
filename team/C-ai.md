@@ -229,7 +229,7 @@ AI가 `GROUNDED`라고 했어도 서버 검증 후 `UNKNOWN`이면 `answer`는 �
 ## 완료 기준
 
 - [ ] `npm test`에서 `grounding` 7건 · `search` 7건 통과
-- [ ] `curl -X POST /api/ask -d '{"text":"전입신고 언제까지 해야 해요?"}'` → `mode: "AI"`, `confidence: "GROUNDED"`, `tasks`에 전입신고
+- [ ] `curl -X POST /api/ask -H "Content-Type: application/json" -d '{"text":"전입신고 언제까지 해야 해요?"}'` → `mode: "AI"`, `confidence: "GROUNDED"`, `tasks`에 전입신고
 - [ ] 원룸 프로필에는 기숙사 전용 카드가 나오지 않는다
 - [ ] Gemini에는 프로필에 맞는 전체 후보가 전달되고 프로필 밖 ID는 근거에서 제외된다
 - [ ] Gemini 실패 시에는 프로필에 맞는 할 일 안에서만 키워드 검색한다
