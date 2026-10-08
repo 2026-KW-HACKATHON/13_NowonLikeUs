@@ -360,3 +360,35 @@ export interface PromoteRequest {
 export interface PromoteResponse {
   taskId: string;
 }
+
+/* ---------- 운영자 정리 (ADMIN 전용) ---------- */
+
+/**
+ * DELETE /api/admin/questions/[id] 응답 (ADMIN). 답변 · "맞아요"도 같이 지워진다.
+ *
+ * 오류: 401 로그인 필요 · 403 운영자 아님 · 404 없는 질문(이미 지워짐) · 409 할 일로 정리된 질문.
+ * 404 · 409 를 받으면 화면은 목록을 다시 불러오면 된다.
+ */
+export interface DeleteQuestionResponse {
+  id: string;
+}
+
+/** PATCH /api/admin/answers/[id] 요청 (ADMIN). true 숨기기 · false 되돌리기. */
+export interface HideAnswerRequest {
+  isHidden: boolean;
+}
+
+/**
+ * PATCH /api/admin/answers/[id] 응답.
+ *
+ * 숨겨서 보이는 답변이 하나도 안 남으면 질문이 OPEN 으로 돌아가고, 되돌리면 ANSWERED 가 된다.
+ * `questionStatus` 는 그 결과다. 숨긴 답변은 목록에 다시 나오지 않으므로, 되돌리기는 숨긴 직후
+ * 화면이 들고 있는 답변 id 로만 할 수 있다("되돌리기" 버튼).
+ *
+ * 오류: 400 본문 형식 · 401 · 403 · 404 없는 답변.
+ */
+export interface HideAnswerResponse {
+  answerId: string;
+  isHidden: boolean;
+  questionStatus: QuestionStatus;
+}

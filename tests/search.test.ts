@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 
 import { keywordSearch } from '@/lib/search';
+import { seedTasks } from '@/prisma/seed-data';
 
 const items = [
   { id: '1', title: '전입신고 하기', why: '과태료가 부과됩니다', howTo: '주민센터 방문' },
@@ -158,5 +159,30 @@ describe('keywordSearch', () => {
     expect(source).toEqual(before);
     expect(result[0]).toBe(source[2]);
     expect(result[0].category).toBe('LIFE');
+  });
+});
+
+describe('keywordSearch 실제 시드', () => {
+  const seeds = seedTasks.map(({ title, why, howTo }) => ({ title, why, howTo }));
+  const titles = (query: string) => keywordSearch(seeds, query).map((item) => item.title);
+
+  it.each(['와이파이 설치 방법 알려주세요', '계약서 작성 방법', '방법', '방법을'])('방법만 겹치는 질문은 카드를 찾지 않는다: %s', (query) => {
+    expect(titles(query)).toEqual([]);
+  });
+
+  it('방법이 붙어도 다른 키워드에 맞는 카드만 찾는다', () => {
+    const result = titles('전입 신고 방법');
+    expect(result[0]).toBe('전입신고 하기');
+    expect(result.some((title) => title.includes('쓰레기'))).toBe(false);
+    expect(titles('분리배출 방법')).toEqual(['우리 단지 분리배출 요일 확인하기']);
+  });
+
+  it('방법이 제목에 있는 카드도 다른 키워드로 계속 찾는다', () => {
+    expect(titles('음식물쓰레기 버리는 방법')[0]).toBe('음식물쓰레기 버리는 방법 알아두기');
+    expect(titles('큰 가구 버리는 방법')[0]).toBe('큰 가구 버리는 방법 알아두기 (대형폐기물)');
+  });
+
+  it.each(['전입신고,확정일자', '전입신고·확정일자', '전입신고, 확정일자'])('쉼표·가운데점으로 이은 나열을 나눠 찾는다: %s', (query) => {
+    expect(titles(query).slice(0, 2)).toEqual(['전입신고 하기', '확정일자 받기']);
   });
 });

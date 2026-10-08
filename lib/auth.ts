@@ -60,11 +60,39 @@ export async function getSessionUser(): Promise<SessionUser | null> {
   return verifySession(store.get(SESSION_COOKIE)?.value, secret);
 }
 
-/** 로그인이 필요한 API 의 첫 줄. 로그인하지 않았으면 401 응답을 돌려준다. */
+/**
+ * 토큰 속 사용자를 DB 에서 다시 읽는다. 계정이 지워졌으면 null.
+ * 토큰의 닉네임 · role 은 최대 7일 전 값이라, 여기서 읽은 최신 값을 돌려준다.
+ */
+async function loadAccount(user: SessionUser): Promise<SessionUser | null> {
+  const row = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { id: true, nickname: true, role: true },
+  });
+  return row ? { id: row.id, nickname: row.nickname, role: row.role } : null;
+}
+
+/**
+ * 토큰은 맞는데 계정이 없을 때(지운 계정의 쿠키가 남은 경우).
+ * 쿠키를 지우고 401 을 돌려준다 — 그대로 두면 답변 · 맞아요 저장에서 외래키 오류로 500 이 난다.
+ * 화면은 401 을 받으면 로그인 상태를 새로 읽으므로 "로그인" 버튼으로 바뀐다.
+ */
+async function accountGone(): Promise<Response> {
+  await clearSessionCookie();
+  return errorResponse('로그인이 필요합니다.', 401);
+}
+
+/**
+ * 로그인이 필요한 API 의 첫 줄. 로그인하지 않았거나 계정이 없으면 401 응답을 돌려준다.
+ * 글을 저장하는 API 만 부르므로, 계정 확인 쿼리 한 번이 더 붙어도 괜찮다.
+ */
 export async function requireUser(): Promise<SessionUser | Response> {
   const user = await getSessionUser();
   if (!user) return errorResponse('로그인이 필요합니다.', 401);
-  return user;
+
+  const account = await loadAccount(user);
+  if (!account) return accountGone();
+  return account;
 }
 
 /**
@@ -75,13 +103,10 @@ export async function requireAdmin(): Promise<SessionUser | Response> {
   const user = await getSessionUser();
   if (!user) return errorResponse('로그인이 필요합니다.', 401);
 
-  const row = await prisma.user.findUnique({
-    where: { id: user.id },
-    select: { id: true, nickname: true, role: true },
-  });
-  if (!row) return errorResponse('로그인이 필요합니다.', 401);
-  if (row.role !== 'ADMIN') return errorResponse('운영자만 할 수 있습니다.', 403);
-  return { id: row.id, nickname: row.nickname, role: row.role };
+  const account = await loadAccount(user);
+  if (!account) return accountGone();
+  if (account.role !== 'ADMIN') return errorResponse('운영자만 할 수 있습니다.', 403);
+  return account;
 }
 
 /**

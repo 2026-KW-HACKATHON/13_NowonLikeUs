@@ -97,3 +97,50 @@ export function confirmSlot(
   if (!context.loggedIn || context.status === 'PROMOTED' || answer.authoredByMe) return 'count';
   return 'button';
 }
+
+/* ---------- 운영자 정리 (질문 지우기 · 답변 숨기기) ---------- */
+
+/** 운영자 정리 버튼을 보일 사람인가. 서버도 role 을 DB 에서 다시 읽어 막으므로 화면 판정은 버튼 노출용이다. */
+export function isModerator(user: { role: string } | null): boolean {
+  return user?.role === 'ADMIN';
+}
+
+/** 질문을 지운 직후의 목록. */
+export function withoutQuestion(questions: QuestionItem[], questionId: string): QuestionItem[] {
+  return questions.filter((q) => q.id !== questionId);
+}
+
+/**
+ * 답변을 숨긴 직후의 목록. 질문 상태는 서버가 다시 맞춘 값을 그대로 쓴다
+ * (보이는 답변이 없어지면 ANSWERED → OPEN).
+ */
+export function withAnswerHidden(
+  questions: QuestionItem[],
+  answerId: string,
+  questionStatus: QuestionStatus,
+): QuestionItem[] {
+  return questions.map((q) =>
+    q.answers.some((a) => a.id === answerId)
+      ? { ...q, status: questionStatus, answers: q.answers.filter((a) => a.id !== answerId) }
+      : q,
+  );
+}
+
+/** 숨긴 답변을 되돌린 직후의 목록. 서버 순서(오래된 순)에 맞춰 제자리에 다시 넣는다. */
+export function withAnswerRestored(
+  questions: QuestionItem[],
+  answer: AnswerItem,
+  questionStatus: QuestionStatus,
+): QuestionItem[] {
+  return questions.map((q) =>
+    q.id !== answer.questionId
+      ? q
+      : {
+          ...q,
+          status: questionStatus,
+          answers: [...q.answers.filter((a) => a.id !== answer.id), answer].sort((x, y) =>
+            x.createdAt.localeCompare(y.createdAt),
+          ),
+        },
+  );
+}

@@ -1461,6 +1461,78 @@ button:disabled {
   margin: 0 0 var(--space-3);
 }
 
+/* ---------- 운영자 정리 (이웃의 질문) ---------- */
+
+/* 운영자에게만 보이는 버튼. 주민용 버튼보다 눈에 덜 띄게, 그래도 누를 자리는 44px. */
+.mod-button {
+  width: auto;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1.5px solid var(--border-control);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.mod-button--danger {
+  border-color: var(--danger);
+  background: var(--danger);
+  color: var(--surface);
+}
+
+.qboard__notice {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--accent);
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+
+.qcard__mod {
+  margin-top: var(--space-3);
+  padding-top: var(--space-2);
+  border-top: 1px dashed var(--rule-soft);
+}
+
+.qcard__mod--confirm {
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--danger);
+  border-radius: var(--radius);
+  background: var(--danger-soft);
+}
+
+.qcard__mod-ask {
+  margin: 0 0 var(--space-2);
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.qcard__mod-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.answers__list--hidden {
+  margin-top: var(--space-1);
+}
+
+.answer-row--hidden {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  border-left-style: dashed;
+}
+
+.answer-row__hidden {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
 /* ---------- 표지 (/) ---------- */
 
 /*

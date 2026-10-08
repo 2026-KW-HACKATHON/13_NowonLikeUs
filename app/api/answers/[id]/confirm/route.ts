@@ -13,16 +13,22 @@ function error(message: string, status: number) {
  *
  * 같은 사람이 두 번 눌러도 오류가 아니다. 본인 답변에는 누를 수 없다 —
  * 자기 답변에 확인을 누르면 승격 큐 순위를 혼자 올릴 수 있다.
+ * 할 일로 정리된(PROMOTED) 질문의 답변도 막는다 — 확인 수는 승격 순서를 정하는 값이라 승격 뒤에는 의미가 없고,
+ * 답변 작성(POST /api/questions/[id]/answers)도 같은 경우 409 다. 화면도 이 경우 버튼을 띄우지 않는다.
  */
 export async function POST(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const auth = await requireUser();
   if (auth instanceof Response) return auth;
 
   const { id } = await params;
-  const answer = await prisma.answer.findUnique({ where: { id }, select: { authorId: true, isHidden: true } });
+  const answer = await prisma.answer.findUnique({
+    where: { id },
+    select: { authorId: true, isHidden: true, question: { select: { status: true } } },
+  });
   // 숨긴 답변은 존재 자체를 숨긴다.
   if (!answer || answer.isHidden) return error('없는 답변입니다.', 404);
   if (answer.authorId === auth.id) return error('내가 쓴 답변은 확인할 수 없습니다.', 403);
+  if (answer.question.status === 'PROMOTED') return error('이미 할 일로 정리된 질문입니다.', 409);
 
   try {
     await prisma.confirmation.create({ data: { answerId: id, userId: auth.id } });
