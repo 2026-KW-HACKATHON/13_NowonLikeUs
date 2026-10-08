@@ -2,8 +2,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
 import { Prisma, type Task } from '@prisma/client';
 
 vi.mock('server-only', () => ({}));
-const db = vi.hoisted(() => ({ findMany: vi.fn(), create: vi.fn(), findUser: vi.fn() }));
-vi.mock('@/lib/db', () => ({ prisma: { task: { findMany: db.findMany }, question: { create: db.create }, user: { findUnique: db.findUser } } }));
+const db = vi.hoisted(() => ({ findMany: vi.fn(), create: vi.fn(), count: vi.fn(), findUser: vi.fn() }));
+vi.mock('@/lib/db', () => ({ prisma: { task: { findMany: db.findMany }, question: { create: db.create, count: db.count }, user: { findUnique: db.findUser } } }));
 const session = vi.hoisted(() => ({ getSessionUser: vi.fn() }));
 vi.mock('@/lib/auth', async (importOriginal) => ({
   readJsonBody: (await importOriginal<typeof import('@/lib/auth')>()).readJsonBody,
@@ -65,6 +65,7 @@ beforeEach(() => {
   vi.stubGlobal('fetch', fetchMock);
   db.findMany.mockResolvedValue([task]);
   db.create.mockResolvedValue({ id: 'q-test' });
+  db.count.mockResolvedValue(0);
   session.getSessionUser.mockResolvedValue(null);
   db.findUser.mockImplementation(({ where }: { where: { id: string } }) => Promise.resolve({ id: where.id }));
   warn.mockImplementation(() => {});
@@ -358,5 +359,43 @@ describe('POST /api/ask', () => {
     const response = await POST(request({ text: '전입신고는?' }));
     expect(response.status).toBe(200);
     expect(db.create.mock.calls[0][0].data.askerId).toBeNull();
+  });
+});
+
+describe('POST /api/ask 요청 횟수 제한', () => {
+  const fromIp = (ip: string) => new Request('http://localhost/api/ask', {
+    method: 'POST', headers: { 'Content-Type': 'application/json', 'x-forwarded-for': `${ip}, 10.0.0.1` },
+    body: JSON.stringify({ text: '전입신고는?' }),
+  });
+
+  it('같은 IP 가 1분에 20번을 넘기면 429 이고 DB · AI 에 닿지 않는다', async () => {
+    for (let i = 0; i < 20; i++) expect((await POST(fromIp('203.0.113.7'))).status).toBe(200);
+    db.findMany.mockClear();
+    db.create.mockClear();
+    const response = await POST(fromIp('203.0.113.7'));
+    expect(response.status).toBe(429);
+    expect(Number(response.headers.get('Retry-After'))).toBeGreaterThan(0);
+    expect(await response.json()).toEqual({ error: '요청이 너무 많습니다. 잠시 후 다시 시도해 주세요.' });
+    expect(db.findMany).not.toHaveBeenCalled();
+    expect(db.create).not.toHaveBeenCalled();
+    // 다른 IP 는 영향받지 않는다.
+    expect((await POST(fromIp('203.0.113.8'))).status).toBe(200);
+  });
+
+  it('최근 1분 질문 수가 전체 상한에 닿으면 IP 와 상관없이 429 이고 AI 를 부르지도 저장하지도 않는다', async () => {
+    vi.stubEnv('GEMINI_ALLOW_USER_INPUT', 'true');
+    db.count.mockResolvedValue(30);
+    const response = await POST(request({ text: '전입신고는?' }));
+    expect(response.status).toBe(429);
+    expect(response.headers.get('Retry-After')).toBe('60');
+    expect(fetchMock).not.toHaveBeenCalled();
+    expect(db.create).not.toHaveBeenCalled();
+    const where = db.count.mock.calls[0][0].where;
+    expect(Date.now() - where.createdAt.gte.getTime()).toBeGreaterThanOrEqual(60_000);
+  });
+
+  it('전체 상한 바로 아래면 그대로 답한다', async () => {
+    db.count.mockResolvedValue(29);
+    expect((await POST(request({ text: '전입신고는?' }))).status).toBe(200);
   });
 });

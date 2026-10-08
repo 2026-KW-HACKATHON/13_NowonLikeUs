@@ -3,10 +3,16 @@ import { prisma } from '@/lib/db';
 import { readJsonBody, setSessionCookie } from '@/lib/auth';
 import { validateSignup } from '@/lib/authValidation';
 import { hashPassword } from '@/lib/password';
+import { createLimiter, limitByIp, RATE_LIMITS, tooManyRequests, windowStart } from '@/lib/rateLimit';
 import type { ApiErrorResponse, AuthResponse, SessionUser } from '@/lib/types';
+
+const ipLimiter = createLimiter(RATE_LIMITS.signupPerIp);
 
 /** POST /api/auth/signup — 가입 후 바로 로그인 상태로 만든다. 가입은 항상 MEMBER 다. */
 export async function POST(request: Request) {
+  const limited = limitByIp(ipLimiter, request);
+  if (limited) return limited;
+
   const body = await readJsonBody(request);
   if (body instanceof Response) return body;
 
@@ -15,6 +21,10 @@ export async function POST(request: Request) {
     const error: ApiErrorResponse = { error: input.error };
     return Response.json(error, { status: 400 });
   }
+
+  // 인스턴스끼리 메모리를 나누지 않아 IP 제한만으로는 총량이 막히지 않는다. 최근 가입 수는 모든 인스턴스가 같은 값을 본다.
+  const recentSignups = await prisma.user.count({ where: { createdAt: { gte: windowStart(RATE_LIMITS.signupTotal) } } });
+  if (recentSignups >= RATE_LIMITS.signupTotal.limit) return tooManyRequests(RATE_LIMITS.signupTotal.windowMs / 1000);
 
   const passwordHash = await hashPassword(input.value.password);
 

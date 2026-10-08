@@ -2,7 +2,10 @@ import { prisma } from '@/lib/db';
 import { readJsonBody, requireUser } from '@/lib/auth';
 import { validateAnswer } from '@/lib/answerValidation';
 import { answerSelect, toAnswerItem } from '@/lib/questionView';
+import { createLimiter, limitByIp, RATE_LIMITS, tooManyRequests, windowStart } from '@/lib/rateLimit';
 import type { ApiErrorResponse, CreateAnswerResponse } from '@/lib/types';
+
+const ipLimiter = createLimiter(RATE_LIMITS.answerPerIp);
 
 function error(message: string, status: number) {
   const body: ApiErrorResponse = { error: message };
@@ -14,6 +17,9 @@ function error(message: string, status: number) {
  * 첫 답변이 달리면 질문이 OPEN → ANSWERED 가 되어 운영자 승격 큐에 들어간다.
  */
 export async function POST(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  const limited = limitByIp(ipLimiter, request);
+  if (limited) return limited;
+
   const auth = await requireUser();
   if (auth instanceof Response) return auth;
 
@@ -24,7 +30,12 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!input.ok) return error(input.error, 400);
 
   const { id } = await params;
-  const question = await prisma.question.findUnique({ where: { id }, select: { status: true } });
+  // 계정별 최근 답변 수는 DB 에서 세므로 인스턴스가 여러 개여도 같은 값을 본다. 왕복을 늘리지 않게 같이 보낸다.
+  const [recentAnswers, question] = await Promise.all([
+    prisma.answer.count({ where: { authorId: auth.id, createdAt: { gte: windowStart(RATE_LIMITS.answerPerUser) } } }),
+    prisma.question.findUnique({ where: { id }, select: { status: true } }),
+  ]);
+  if (recentAnswers >= RATE_LIMITS.answerPerUser.limit) return tooManyRequests(RATE_LIMITS.answerPerUser.windowMs / 1000);
   if (!question) return error('없는 질문입니다.', 404);
   if (question.status === 'PROMOTED') return error('이미 할 일로 정리된 질문입니다.', 409);
 
