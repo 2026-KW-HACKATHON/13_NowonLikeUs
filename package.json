@@ -6,13 +6,17 @@
     "dev": "next dev",
     "build": "next build",
     "start": "next start",
+    "postinstall": "prisma generate",
     "lint": "eslint",
     "test": "vitest run",
     "test:watch": "vitest",
-    "seed": "tsx prisma/seed.ts"
+    "seed": "tsx prisma/seed.ts",
+    "seed:admin": "tsx prisma/seed-admin.ts"
   },
   "dependencies": {
     "@prisma/client": "^6.19.3",
+    "bcryptjs": "^3.0.3",
+    "jose": "^6.2.12",
     "next": "16.3.6",
     "react": "19.2.8",
     "react-dom": "19.2.8"

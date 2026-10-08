@@ -1,49 +1,1446 @@
+/*
+ * 「월계는 처음이라」 화면 기준.
+ *
+ * 스타일: 공공 에디토리얼 — 굵은 구분선, 큰 숫자, 카테고리 색띠.
+ * 배리어프리 트랙이므로 본문 18px, 터치 타깃 48px 이상, 대비는 WCAG AAA(7:1)로 맞춘다.
+ *
+ * 색은 전부 계산해서 골랐다. 눈대중으로 정하지 않는다.
+ *   본문 15.9:1 · 보조 7.7:1 · 카테고리 잉크 8.6~10.4:1 (각자의 soft 배경 위에서도 7:1 이상)
+ * 입력 요소 테두리는 본문이 아니라 UI 경계라서 기준이 3:1 이다(WCAG 1.4.11).
+ * --rule-soft(면 구분, 1.4:1)로는 모자라므로 --border-control 을 따로 둔다.
+ *
+ * 카테고리를 색으로만 구분하지 않는다. 색띠 옆에 항상 "행정" 같은 글자가 같이 붙는다.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --bg: #f7f7f5;
+  --surface: #ffffff;
+
+  --text: #1c1c1a;
+  --text-soft: #4f4f4a;
+
+  /* 에디토리얼의 뼈대. 굵은 선은 --rule, 가는 선은 --rule-soft. */
+  --rule: #1c1c1a;
+  --rule-soft: #dcdcd6;
+  --border-control: #8a8a7f;
+
+  --accent: #1a5239;
+  --accent-soft: #e6f1eb;
+  --on-accent: #ffffff;
+  --danger: #8f2a19;
+  --danger-soft: #fbeae6;
+
+  /* AI 답변 신뢰도 "일부만 확인됨"(노랑). 노랑을 글자색으로 쓰면 대비가 안 나와 갈색 쪽으로 내렸다. 8.2:1 */
+  --conf-partial: #5c4300;
+  --conf-partial-soft: #fbf0cc;
+
+  --cat-admin: #143f7a;
+  --cat-admin-soft: #e4ecf7;
+  --cat-housing: #1a5239;
+  --cat-housing-soft: #e6f1eb;
+  --cat-waste: #7a3a0f;
+  --cat-waste-soft: #f7ece1;
+  --cat-life: #4a2f8f;
+  --cat-life-soft: #ece7f8;
+
+  --radius: 10px;
+  --focus: 3px;
+
+  --space-1: 8px;
+  --space-2: 12px;
+  --space-3: 16px;
+  --space-4: 24px;
+  --space-5: 32px;
+  --space-6: 48px;
+  --space-7: 64px;
 }
 
+/*
+ * 저시력 · 광과민 사용자는 어두운 화면을 쓴다. OS 설정을 그대로 따른다.
+ * 이쪽 값도 전부 AAA 로 맞춰 뒀다.
+ */
 @media (prefers-color-scheme: dark) {
   :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+    --bg: #141412;
+    --surface: #1f1f1c;
+
+    --text: #f2f2ee;
+    --text-soft: #b9b9b1;
+
+    --rule: #f2f2ee;
+    --rule-soft: #45453e;
+    --border-control: #6e6e66;
+
+    --accent: #79dca8;
+    --accent-soft: #1b3326;
+    --on-accent: #10231a;
+    --danger: #ff9f88;
+    --danger-soft: #3a211b;
+
+    --conf-partial: #f2cc5c;
+    --conf-partial-soft: #2f2708;
+
+    --cat-admin: #8fbdf5;
+    --cat-admin-soft: #15233a;
+    --cat-housing: #79dca8;
+    --cat-housing-soft: #1b3326;
+    --cat-waste: #f0a874;
+    --cat-waste-soft: #33210f;
+    --cat-life: #b9a2f5;
+    --cat-life-soft: #241c3d;
   }
 }
 
-html {
-  height: 100%;
+/* 카테고리 색을 --cat 하나로 받아 쓴다. 쓰는 쪽은 어떤 카테고리인지 몰라도 된다. */
+[data-category="ADMIN"] {
+  --cat: var(--cat-admin);
+  --cat-soft: var(--cat-admin-soft);
 }
-
-html,
-body {
-  max-width: 100vw;
-  overflow-x: hidden;
+[data-category="HOUSING"] {
+  --cat: var(--cat-housing);
+  --cat-soft: var(--cat-housing-soft);
 }
-
-body {
-  min-height: 100%;
-  display: flex;
-  flex-direction: column;
-  color: var(--foreground);
-  background: var(--background);
-  font-family: Arial, Helvetica, sans-serif;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+[data-category="WASTE"] {
+  --cat: var(--cat-waste);
+  --cat-soft: var(--cat-waste-soft);
+}
+[data-category="LIFE"] {
+  --cat: var(--cat-life);
+  --cat-soft: var(--cat-life-soft);
 }
 
 * {
   box-sizing: border-box;
-  padding: 0;
+}
+
+html,
+body {
   margin: 0;
+  padding: 0;
+  background: var(--bg);
+  color: var(--text);
+  font-family: var(--font-sans), "Apple SD Gothic Neo", "Malgun Gothic", system-ui, sans-serif;
+  font-size: 18px;
+  line-height: 1.65;
+  /* 한글은 단어 단위로 끊어야 읽힌다. 다만 긴 URL · 주소가 들어오면 그대로 넘치므로 안전망을 둔다. */
+  word-break: keep-all;
+  overflow-wrap: break-word;
+}
+
+/* ---------- 접근성 기본 ---------- */
+
+/*
+ * 포커스 링을 한 곳에서 전역으로 준다. 개별 요소에서 지우지 않는다.
+ * 키보드만 쓰는 사용자는 이 링이 없으면 자기가 어디 있는지 알 수 없다.
+ */
+:focus-visible {
+  outline: var(--focus) solid var(--text);
+  outline-offset: 2px;
+}
+
+/* 전정기관 장애가 있으면 움직임 자체가 증상을 유발한다. OS 설정을 따른다. */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/*
+ * 스크린리더만 읽는 텍스트. 화면에서는 안 보이지만 DOM 에는 있다.
+ * 건너뛰기 링크(skip link)는 아직 안 넣었다. 본문 위에 반복되는 내비게이션이
+ * 없어서 건너뛸 대상이 없다. 상단 내비게이션이 생기면 그때 같이 넣는다.
+ */
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+/* ---------- 레이아웃 ---------- */
+
+main {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: var(--space-5) 20px var(--space-7);
 }
 
 a {
   color: inherit;
-  text-decoration: none;
 }
 
-@media (prefers-color-scheme: dark) {
-  html {
-    color-scheme: dark;
-  }
+/* ---------- 머리말 ---------- */
+
+/*
+ * 제호 아래 굵은 선 하나가 이 화면의 기준선이다. 에디토리얼 레이아웃의 출발점이라
+ * 다른 요소의 선 굵기를 전부 여기에 맞춘다.
+ */
+.masthead {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  padding-bottom: var(--space-2);
+  border-bottom: 3px solid var(--rule);
+  margin-bottom: var(--space-5);
+}
+
+.masthead__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: var(--space-1) var(--space-3);
+  width: 100%;
+}
+
+.masthead__brand {
+  margin: 0;
+  font-size: 19px;
+  font-weight: 900;
+  letter-spacing: -0.03em;
+}
+
+.masthead__meta {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+/* ---------- 히어로 (가장 급한 할 일) ---------- */
+
+/*
+ * 이 제품의 본질은 기한이다. 그런데 기한이 15px 배지에 들어가 있으면 아무도 안 본다.
+ * 가장 급한 항목 하나를 끌어올려 숫자를 주인공으로 세운다.
+ */
+.hero {
+  display: block;
+  margin-bottom: var(--space-6);
+  padding: var(--space-4);
+  background: var(--cat-soft, var(--accent-soft));
+  border-left: 8px solid var(--cat, var(--accent));
+  border-radius: 0 var(--radius) var(--radius) 0;
+  text-decoration: none;
+  transition: filter 150ms ease;
+}
+
+.hero:hover {
+  filter: brightness(0.97);
+}
+
+.hero.overdue {
+  background: var(--danger-soft);
+  border-left-color: var(--danger);
+}
+
+/*
+ * 같은 항목이 아래 묶음에도 다시 나오므로, 여기가 "요약 자리"라는 걸 말로 못박는다.
+ * 라벨이 없으면 그냥 중복으로 읽힌다.
+ */
+.hero__eyebrow {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: 14px;
+  font-weight: 900;
+  letter-spacing: 0.04em;
+  color: var(--text-soft);
+}
+
+.hero__num {
+  display: block;
+  font-size: clamp(56px, 17vw, 84px);
+  font-weight: 900;
+  line-height: 1;
+  letter-spacing: -0.05em;
+  /* 숫자 폭을 고정해서 D-9 → D-10 으로 바뀔 때 글자가 흔들리지 않게 한다. */
+  font-variant-numeric: tabular-nums;
+  color: var(--cat, var(--accent));
+}
+
+.hero.overdue .hero__num {
+  color: var(--danger);
+}
+
+.hero__cap {
+  display: block;
+  margin-top: var(--space-2);
+  font-size: 20px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.hero__cta {
+  display: block;
+  margin-top: var(--space-1);
+  font-size: 16px;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+/* ---------- 카테고리 묶음 ---------- */
+
+.group {
+  margin-bottom: var(--space-6);
+}
+
+.group__head {
+  display: flex;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin: 0 0 var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: 2px solid var(--rule);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.group__dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 3px;
+  background: var(--cat);
+}
+
+.group__count {
+  margin-left: auto;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+/* ---------- 할 일 한 줄 ---------- */
+
+/*
+ * 카드 상자를 걷어내고 색띠 + 가는 선으로 나눈다. 상자가 없으면 제목 크기와
+ * 색띠만 남아서 위계가 또렷해진다.
+ */
+.task-row {
+  display: block;
+  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-2);
+  border-left: 5px solid var(--cat);
+  border-bottom: 1.5px solid var(--rule-soft);
+  text-decoration: none;
+  transition: background 150ms ease;
+}
+
+.task-row:hover {
+  background: var(--cat-soft);
+}
+
+.task-row__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1);
+  margin-bottom: 2px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.task-row__cat {
+  color: var(--cat);
+}
+
+/* 기한은 오른쪽 끝에 세워서 세로로 읽히게 한다. 목록을 훑을 때 기한만 따라가게 된다. */
+.task-row__due {
+  margin-left: auto;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+
+.task-row__due.overdue {
+  color: var(--danger);
+}
+
+.task-row__due.none {
+  font-weight: 500;
+}
+
+.task-row__title {
+  margin: 0 0 2px;
+  font-size: 21px;
+  font-weight: 700;
+  letter-spacing: -0.02em;
+}
+
+.task-row__why {
+  margin: 0;
+  font-size: 16px;
+  color: var(--text-soft);
+}
+
+.task-row__stale {
+  display: block;
+  margin-top: 6px;
+  font-size: 14px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+/* ---------- 상세 ---------- */
+
+/*
+ * 금액 · 기한 · 장소는 DB 원문을 그대로 박는다. 이 화면에 AI 가 쓴 문장은 없다.
+ * 구획을 h2 로 나눠 두는 이유는 스크린리더가 제목 단위로 건너뛸 수 있게 하려는 것이다.
+ */
+/* 상세는 하위 화면이라 제호를 다시 띄우지 않는다. 돌아가는 길만 분명히 둔다. */
+.back {
+  display: inline-block;
+  min-height: 44px;
+  margin-bottom: var(--space-3);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.detail-head {
+  padding-left: var(--space-3);
+  border-left: 8px solid var(--cat, var(--accent));
+  margin-bottom: var(--space-4);
+}
+
+.detail-head__top {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: var(--space-1) var(--space-3);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.detail-head__cat {
+  color: var(--cat, var(--accent));
+}
+
+.detail-head__due {
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+
+.detail-head__due.overdue {
+  color: var(--danger);
+}
+
+.detail-head h1 {
+  margin: 4px 0 0;
+  font-size: clamp(28px, 8vw, 34px);
+  font-weight: 900;
+  line-height: 1.25;
+  letter-spacing: -0.03em;
+}
+
+.detail-section {
+  margin-top: var(--space-4);
+  padding-top: var(--space-4);
+  border-top: 2px solid var(--rule);
+}
+
+.detail-section h2 {
+  margin: 0 0 var(--space-1);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+  color: var(--text-soft);
+}
+
+/* 줄바꿈이 들어간 원문을 그대로 보여준다. 임의로 합치지 않는다. */
+.detail-body {
+  margin: 0;
+  white-space: pre-line;
+}
+
+.place {
+  margin: 0;
+}
+
+.place div {
+  display: flex;
+  gap: var(--space-2);
+  padding: 4px 0;
+}
+
+.place dt {
+  flex: 0 0 56px;
+  font-weight: 700;
+  color: var(--text-soft);
+}
+
+.place dd {
+  margin: 0;
+}
+
+/* 전화는 링크로 둔다. 번호를 옮겨 적다가 틀리는 걸 막는다. */
+/* 전화 걸기는 이 화면의 핵심 동작이다. 글자 높이만큼만 눌리면 손가락으로 맞히기 어렵다. */
+.tel {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* 외부로 나가는 버튼. button 과 똑같이 보이되 a 태그다. */
+.button-link {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 56px;
+  margin-top: var(--space-1);
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--accent);
+  border-radius: var(--radius);
+  text-decoration: none;
+  transition: filter 150ms ease;
+}
+
+.button-link:hover {
+  filter: brightness(1.12);
+}
+
+.button-link:active {
+  filter: brightness(0.92);
+}
+
+/* 기한 지남 · 오래된 정보 같은 경고는 색 말고 테두리로도 알린다. */
+.warn {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--danger);
+  background: var(--danger-soft);
+  color: var(--danger);
+  font-weight: 700;
+}
+
+.asof {
+  margin-top: var(--space-4);
+  font-size: 14px;
+  color: var(--text-soft);
+}
+
+/* ---------- 상황 입력 ---------- */
+
+.page-title {
+  margin: 0 0 var(--space-1);
+  font-size: clamp(30px, 9vw, 38px);
+  font-weight: 900;
+  line-height: 1.2;
+  letter-spacing: -0.035em;
+}
+
+.lead {
+  margin: 0 0 var(--space-6);
+  color: var(--text-soft);
+}
+
+fieldset {
+  border: none;
+  padding: 0;
+  margin: 0 0 var(--space-5);
+}
+
+legend {
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  padding: 0;
+  margin-bottom: var(--space-2);
+}
+
+.choices {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.choice {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 18px;
+  border: 1.5px solid var(--border-control);
+  border-radius: var(--radius);
+  background: var(--surface);
+  cursor: pointer;
+  user-select: none;
+  transition: border-color 150ms ease, background 150ms ease;
+}
+
+.choice input {
+  position: absolute;
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+/*
+ * 선택 상태를 색 하나로만 알리지 않는다. 테두리 굵기와 글씨 굵기도 같이 바뀐다.
+ * 색각 이상이 있으면 초록 테두리만으로는 구분이 안 된다.
+ */
+.choice:has(input:checked) {
+  border-color: var(--accent);
+  border-width: 3px;
+  padding: 0 16.5px;
+  background: var(--accent-soft);
+  font-weight: 700;
+}
+
+.choice:has(input:focus-visible) {
+  outline: var(--focus) solid var(--text);
+  outline-offset: 2px;
+}
+
+.field {
+  display: block;
+  margin-bottom: var(--space-5);
+}
+
+.field > span {
+  display: block;
+  font-weight: 900;
+  font-size: 17px;
+  letter-spacing: -0.02em;
+  margin-bottom: var(--space-2);
+}
+
+input[type="date"] {
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  font: inherit;
+  border: 1.5px solid var(--border-control);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+}
+
+button {
+  width: 100%;
+  min-height: 56px;
+  font: inherit;
+  font-weight: 700;
+  color: var(--on-accent);
+  background: var(--accent);
+  border: none;
+  border-radius: var(--radius);
+  cursor: pointer;
+  transition: filter 150ms ease;
+}
+
+button:hover {
+  filter: brightness(1.12);
+}
+
+/* 누른 순간 반응이 없으면 눌렸는지 모른다. 터치 기기에는 hover 가 없다. */
+button:active {
+  filter: brightness(0.92);
+}
+
+.note {
+  color: var(--text-soft);
+  font-size: 15px;
+  margin-top: var(--space-2);
+}
+
+/* ---------- 상태 ---------- */
+
+.empty {
+  padding: var(--space-4) 0;
+  color: var(--text-soft);
+}
+
+.nav {
+  margin-top: var(--space-6);
+  padding-top: var(--space-3);
+  border-top: 2px solid var(--rule);
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-4);
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.nav a {
+  display: inline-flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+/* ---------- 진행률 · 완료 ---------- */
+
+.progress {
+  margin-bottom: var(--space-5);
+}
+
+.progress__text {
+  margin: 0 0 var(--space-1);
+  font-size: 16px;
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+.progress__text strong {
+  font-weight: 900;
+  color: var(--text);
+}
+
+/* 바 테두리는 UI 경계라 3:1 이상이어야 한다(WCAG 1.4.11). 숫자도 글로 같이 적어 둔다. */
+.progress__bar {
+  height: 14px;
+  border: 1.5px solid var(--border-control);
+  border-radius: 999px;
+  background: var(--surface);
+  overflow: hidden;
+}
+
+.progress__fill {
+  height: 100%;
+  background: var(--accent);
+  transition: width 300ms ease;
+}
+
+.next-helper {
+  margin: 0 0 var(--space-6);
+  padding: var(--space-4);
+  border-left: 8px solid var(--accent);
+  background: var(--accent-soft);
+}
+
+.next-helper__title {
+  margin: 0 0 var(--space-1);
+  font-size: 20px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.next-helper__body {
+  margin: 0 0 var(--space-3);
+}
+
+/*
+ * 끝낸 일은 흐리게 하지 않는다. 흐리게 하면 대비가 7:1 아래로 떨어진다.
+ * 대신 제목에 취소선을 긋고 오른쪽에 "✓ 완료" 글자를 둔다.
+ */
+.task-row.done .task-row__title {
+  text-decoration: line-through;
+  text-decoration-thickness: 2px;
+}
+
+.group--done .group__head {
+  color: var(--text-soft);
+}
+
+.done-toggle {
+  background: var(--surface);
+  color: var(--text);
+  border: 3px solid var(--accent);
+}
+
+.done-toggle.on {
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+/* ---------- 질문하기 ---------- */
+
+.ask-form {
+  margin-bottom: var(--space-5);
+}
+
+.ask-label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.ask-input {
+  display: block;
+  width: 100%;
+  min-height: 140px;
+  padding: var(--space-2) 14px;
+  font: inherit;
+  line-height: 1.6;
+  color: inherit;
+  background: var(--surface);
+  border: 1.5px solid var(--border-control);
+  border-radius: var(--radius);
+  resize: vertical;
+}
+
+.ask-input[aria-invalid="true"] {
+  border-color: var(--danger);
+  border-width: 3px;
+}
+
+.ask-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: var(--space-2);
+  margin-top: 6px;
+}
+
+.ask-count {
+  margin: 0;
+  font-size: 14px;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-soft);
+}
+
+/* 오류는 입력칸 바로 아래에. 색 말고 문장으로도 알린다. */
+.field-error {
+  margin: 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+/* 제출 버튼 바로 위에 둔다. 누르기 직전에 읽히는 자리여야 고지가 고지 노릇을 한다. */
+.ask-notice {
+  margin: var(--space-3) 0 var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--border-control);
+  background: var(--surface);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+button:disabled {
+  cursor: progress;
+  filter: none;
+  opacity: 1;
+  background: var(--text-soft);
+}
+
+.ask-result__title {
+  margin: 0 0 var(--space-2);
+  padding-top: var(--space-4);
+  border-top: 2px solid var(--rule);
+  font-size: 20px;
+  font-weight: 900;
+}
+
+/* 제목에 초점이 옮겨 와도 테두리가 거슬리지 않게. 키보드 초점은 전역 :focus-visible 이 따로 그린다. */
+.ask-result__title:focus {
+  outline: none;
+}
+
+/* 결과의 중심은 원문 카드다. 목록 화면의 묶음 제목과 같은 모양으로 둔다. */
+.ask-result__sub {
+  margin: var(--space-5) 0 var(--space-2);
+  padding-bottom: var(--space-1);
+  border-bottom: 2px solid var(--rule);
+  font-size: 16px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.answer {
+  margin: 0;
+  padding: var(--space-3);
+  border-left: 8px solid var(--border-control);
+  background: var(--surface);
+}
+
+.answer--grounded {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
+.answer--partial {
+  border-left-color: var(--conf-partial);
+  background: var(--conf-partial-soft);
+}
+
+.answer--fallback {
+  font-weight: 700;
+}
+
+/* 서버 문장이 아니라 화면이 정한 한 줄 설명이라 크게 키우지 않는다. 배지가 먼저 읽힌다. */
+.answer__text {
+  margin: var(--space-1) 0 0;
+  font-size: 17px;
+  font-weight: 700;
+}
+
+.answer__hint {
+  margin: var(--space-1) 0 0;
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+/*
+ * 신뢰도 배지 — 기호 + 글자. 색만으로 구분하지 않는다.
+ * 색은 --conf-color 하나로 받는다. 기호 동그라미의 배경을 currentColor 로 하면
+ * 기호 글자색(흰색)을 따라가서 동그라미가 배경에 묻힌다.
+ */
+.conf {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 3px 12px 3px 4px;
+  border-radius: 999px;
+  border: 1.5px solid var(--conf-color);
+  color: var(--conf-color);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.conf__mark {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  background: var(--conf-color);
+  color: var(--surface);
+  font-size: 13px;
+  font-weight: 900;
+}
+
+.conf--grounded {
+  --conf-color: var(--accent);
+}
+
+.conf--partial {
+  --conf-color: var(--conf-partial);
+}
+
+.conf--unknown {
+  --conf-color: var(--text-soft);
+}
+
+/* ---------- 로그인 · 가입 ---------- */
+
+.auth-form {
+  margin-bottom: var(--space-4);
+}
+
+.auth-field {
+  margin-bottom: var(--space-4);
+}
+
+.auth-field__label {
+  display: block;
+  margin-bottom: var(--space-1);
+  font-size: 17px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+.auth-field__hint {
+  margin: 0 0 6px;
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.auth-field__error {
+  margin-top: 6px;
+}
+
+.text-input {
+  display: block;
+  width: 100%;
+  min-height: 52px;
+  padding: 0 14px;
+  font: inherit;
+  border: 1.5px solid var(--border-control);
+  border-radius: var(--radius);
+  background: var(--surface);
+  color: inherit;
+}
+
+.text-input[aria-invalid="true"] {
+  border-color: var(--danger);
+  border-width: 3px;
+  padding: 0 12.5px;
+}
+
+.text-input:disabled {
+  color: var(--text-soft);
+}
+
+/* 체크박스 자체는 작아도 글자까지 눌리게 해서 터치 영역 44px 를 맞춘다. */
+.auth-reveal {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-height: 44px;
+  margin: calc(var(--space-2) * -1) 0 var(--space-3);
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.auth-reveal input {
+  width: 20px;
+  height: 20px;
+  margin: 0;
+  accent-color: var(--accent);
+}
+
+.auth-form__error {
+  margin: 0 0 var(--space-3);
+}
+
+.auth-form__error:focus {
+  outline: none;
+}
+
+.auth-switch {
+  margin: 0;
+  text-align: center;
+  font-size: 16px;
+}
+
+.auth-switch a {
+  display: inline-block;
+  min-height: 44px;
+  line-height: 44px;
+  font-weight: 700;
+}
+
+/* ---------- 로그인 상태 (제호 오른쪽) ---------- */
+
+/* 확인 전에도 자리를 잡아 둬서, 닉네임이 들어올 때 제호가 흔들리지 않게 한다. */
+.account {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 44px;
+  font-size: 15px;
+}
+
+.account__link {
+  font-weight: 700;
+}
+
+.account__name {
+  font-weight: 700;
+}
+
+/* 전역 button 은 꽉 찬 주 버튼이다. 여기서는 글자 링크처럼 보이게 되돌린다. */
+.account__logout {
+  width: auto;
+  min-height: 44px;
+  padding: 0 var(--space-1);
+  background: none;
+  color: var(--text-soft);
+  font-size: 15px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.account__logout:disabled {
+  background: none;
+  color: var(--text-soft);
+}
+
+/* 보조 버튼: 주 버튼과 같은 크기, 테두리만. 한 화면에 주 버튼이 여러 개 생기지 않게. */
+.secondary-button {
+  background: var(--surface);
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+
+.secondary-button:disabled {
+  background: var(--surface);
+  color: var(--text-soft);
+  border-color: var(--border-control);
+}
+
+/* ---------- 이웃의 질문 ---------- */
+
+/* 좁은 화면에서는 가로 스크롤 대신 줄을 바꾼다. 숨은 탭이 생기면 있는 줄도 모른다. */
+.tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0 var(--space-1);
+  margin-bottom: var(--space-4);
+  border-bottom: 2px solid var(--rule);
+}
+
+.tabs__item {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  padding: 0 var(--space-2);
+  margin-bottom: -2px;
+  border-bottom: 4px solid transparent;
+  color: var(--text-soft);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* 지금 탭은 색만이 아니라 굵은 밑줄로도 구분한다. */
+.tabs__item[aria-current="page"] {
+  color: var(--text);
+  border-bottom-color: var(--accent);
+}
+
+.qlist {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.qcard {
+  padding: var(--space-4) 0;
+  border-bottom: 1px solid var(--rule-soft);
+}
+
+.qcard__meta {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--space-1) var(--space-2);
+  margin-bottom: var(--space-1);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.qcard__state {
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 12px;
+  border-radius: 999px;
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.qcard__state--promoted {
+  border: 1.5px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+}
+
+.qcard__text {
+  margin: 0 0 var(--space-1);
+  font-size: 20px;
+  font-weight: 900;
+  line-height: 1.45;
+  letter-spacing: -0.02em;
+}
+
+.qcard__context {
+  margin: 0 0 var(--space-3);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.qcard__closed,
+.qcard__sent {
+  margin: var(--space-2) 0;
+  font-size: 16px;
+  color: var(--text-soft);
+}
+
+.qcard__login {
+  display: inline-flex;
+  align-items: center;
+  min-height: 48px;
+  font-weight: 700;
+}
+
+/* 주민 답변은 확인 전 정보라 할 일 카드(색띠)와 다르게 보여야 한다. 회색 세로줄로 "인용"처럼. */
+.answers {
+  margin: var(--space-2) 0 var(--space-3);
+}
+
+.answers__label {
+  margin: 0 0 var(--space-1);
+  font-size: 15px;
+  font-weight: 900;
+}
+
+.answers__caveat {
+  font-weight: 500;
+  color: var(--text-soft);
+}
+
+.answers__list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.answer-row {
+  margin-bottom: var(--space-2);
+  padding: var(--space-2) var(--space-3);
+  border-left: 4px solid var(--border-control);
+  background: var(--surface);
+}
+
+.answer-row__text {
+  margin: 0 0 var(--space-1);
+  white-space: pre-line;
+}
+
+.answer-row__foot {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+}
+
+.answer-row__by {
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.confirm {
+  width: auto;
+  min-height: 44px;
+  padding: 0 var(--space-3);
+  border: 1.5px solid var(--border-control);
+  border-radius: 999px;
+  background: var(--surface);
+  color: var(--text);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+/* 내가 누른 상태는 색과 ✓ 기호 둘 다로 알린다. */
+.confirm[aria-pressed="true"],
+.confirm[aria-pressed="true"]:disabled {
+  border-color: var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  cursor: default;
+}
+
+.confirm--static {
+  display: inline-flex;
+  align-items: center;
+  min-height: 0;
+  border: none;
+  background: none;
+  padding: 0;
+  color: var(--text-soft);
+}
+
+.answer-form {
+  margin-top: var(--space-3);
+}
+
+.answer-form__input {
+  min-height: 120px;
+}
+
+.answer-form__actions {
+  display: grid;
+  grid-template-columns: 2fr 1fr;
+  gap: var(--space-2);
+}
+
+/* ---------- 다음 동선 (질문 결과 · 다 끝낸 사람) ---------- */
+
+.ask-next {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--accent);
+  background: var(--accent-soft);
+  font-size: 16px;
+}
+
+.ask-next a {
+  font-weight: 700;
+}
+
+.next-helper__actions {
+  display: grid;
+  gap: var(--space-1);
+}
+
+/* 주 버튼 옆의 두 번째 선택지. 같은 크기, 테두리만. */
+.button-link--secondary {
+  background: var(--surface);
+  color: var(--accent);
+  border: 2px solid var(--accent);
+}
+
+/* 링크로 찾아온 질문은 왼쪽 띠로 표시한다. 초점은 옮기되 테두리는 그리지 않는다(Tab 순서에 없는 칸). */
+.qcard:focus {
+  outline: none;
+}
+
+.qcard--target {
+  padding-left: var(--space-2);
+  box-shadow: inset 4px 0 0 var(--accent);
+}
+
+/* 내가 쓴 답변 표시. "맞아요" 버튼이 왜 없는지 바로 알 수 있게. */
+.answer-row__mine {
+  font-weight: 700;
+  color: var(--accent);
+}
+
+/* ---------- 승격 (운영자) ---------- */
+
+.queue-note {
+  margin: 0 0 var(--space-2);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.queue-count {
+  font-weight: 900;
+  color: var(--text);
+}
+
+.publish-notice {
+  margin-bottom: var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--accent);
+  background: var(--accent-soft);
+  color: var(--accent);
+  font-weight: 700;
+}
+
+.publish-notice p {
+  margin: 0;
+}
+
+.publish-notice:focus,
+.editor__title:focus,
+.editor__error:focus {
+  outline: none;
+}
+
+/* 전역 button(꽉 찬 주 버튼)을 글자 링크처럼 되돌린다. .back 과 같은 모양. */
+.back-button {
+  width: auto;
+  min-height: 44px;
+  margin-bottom: var(--space-3);
+  padding: 0;
+  background: none;
+  color: var(--text);
+  font-size: 16px;
+  font-weight: 700;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+
+.editor__title {
+  margin: 0 0 var(--space-3);
+  font-size: 24px;
+  font-weight: 900;
+  letter-spacing: -0.02em;
+}
+
+/* 근거가 된 질문 · 답변. 양식을 쓰는 동안 계속 대조할 수 있게 위에 둔다. */
+.editor__source {
+  margin-bottom: var(--space-5);
+  padding: var(--space-3);
+  border: 1.5px solid var(--rule-soft);
+  border-radius: var(--radius);
+}
+
+.editor__label {
+  margin: 0 0 var(--space-1);
+  font-size: 15px;
+  font-weight: 900;
+  color: var(--text-soft);
+}
+
+.editor__question {
+  margin: 0 0 var(--space-1);
+  font-size: 19px;
+  font-weight: 900;
+  line-height: 1.45;
+}
+
+.editor__origin {
+  margin: 0 0 var(--space-4);
+  padding: var(--space-2) var(--space-3);
+  border-left: 5px solid var(--border-control);
+  background: var(--surface);
+  font-size: 15px;
+}
+
+/* AI 초안은 노랑(일부만 확인됨 색)으로 — 아직 확인 전이라는 뜻을 색과 문장 둘 다로. */
+.editor__origin--ai {
+  border-left-color: var(--conf-partial);
+  background: var(--conf-partial-soft);
+  color: var(--conf-partial);
+  font-weight: 700;
+}
+
+.editor__textarea {
+  min-height: 96px;
+}
+
+.editor__hint {
+  margin: 0 0 var(--space-2);
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.editor__sublabel {
+  margin: var(--space-2) 0 var(--space-1);
+  font-size: 15px;
+  font-weight: 700;
+}
+
+.editor__warn-hint {
+  color: var(--conf-partial);
+  font-weight: 700;
+}
+
+.editor__warn-input {
+  border-color: var(--conf-partial);
+  border-width: 3px;
+  padding: 0 12.5px;
+}
+
+.audience {
+  margin: var(--space-3) 0 0;
+  padding: var(--space-2) var(--space-3);
+  background: var(--surface);
+  border: 1.5px solid var(--rule-soft);
+  border-radius: var(--radius);
+  font-size: 16px;
+}
+
+/* 발행 전 마지막 확인. 체크박스가 작아도 문장 전체가 눌리게. */
+.confirm-check {
+  display: flex;
+  align-items: flex-start;
+  gap: var(--space-2);
+  margin: var(--space-4) 0 var(--space-3);
+  padding: var(--space-3);
+  border: 2px solid var(--rule);
+  border-radius: var(--radius);
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.confirm-check input {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  margin-top: 4px;
+  accent-color: var(--accent);
+}
+
+.editor__error {
+  margin: 0 0 var(--space-3);
 }
