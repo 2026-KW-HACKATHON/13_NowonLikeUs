@@ -1,4 +1,6 @@
-import { getSessionUser } from '@/lib/auth';
+import { Prisma } from '@prisma/client';
+
+import { getSessionUser, readJsonBody } from '@/lib/auth';
 import { prisma } from '@/lib/db';
 import { askGemini } from '@/lib/gemini';
 import { groundAnswer } from '@/lib/grounding';
@@ -21,6 +23,26 @@ function isDate(value: unknown): value is string {
   return Number.isFinite(date.getTime()) && date.toISOString().slice(0, 10) === value;
 }
 
+/** 매개변수(charset 등)를 뺀 미디어 타입이 정확히 application/json 인지. */
+function isJsonContentType(request: Request): boolean {
+  const mediaType = (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+  return mediaType === 'application/json';
+}
+
+/**
+ * 로그에 남길 고정된 실패 분류. 오류 메시지·임의 name/code 는 질문이나 DB 정보가 섞일 수 있어 그대로 쓰지 않는다.
+ * Prisma 오류 코드는 형식(P0000)이 맞을 때만 남긴다.
+ */
+function failureKind(error: unknown): string {
+  if (error instanceof Prisma.PrismaClientKnownRequestError) {
+    return /^P\d{4}$/.test(error.code) ? `db ${error.code}` : 'db';
+  }
+  if (error instanceof Prisma.PrismaClientInitializationError) return 'db-init';
+  if (error instanceof Prisma.PrismaClientValidationError || error instanceof Prisma.PrismaClientUnknownRequestError
+    || error instanceof Prisma.PrismaClientRustPanicError) return 'db';
+  return 'unknown';
+}
+
 /**
  * 질문자 id. 로그인했고 그 계정이 지금도 DB 에 있을 때만 돌려준다(자체 DB 에만 저장, AI 요청에는 넣지 않는다).
  * 세션을 못 읽거나, 지운 계정의 쿠키가 남아 있으면 null — 외래키 위반으로 질문 자체가 막히면 안 된다.
@@ -35,8 +57,10 @@ async function resolveAskerId(): Promise<string | null> {
 
 /** 외부 AI는 명시 허용 시에만 호출한다. 질문과 최소 상황은 자체 DB에 저장한다. */
 export async function POST(request: Request) {
-  const body: unknown = await request.json().catch(() => null);
-  if (!isRecord(body) || typeof body.text !== 'string' || !body.text.trim() || body.text.length > 1000) {
+  // readJsonBody 는 "application/jsonp" 같은 비슷한 형식도 통과시켜, 미디어 타입이 정확히 JSON 일 때만 읽는다.
+  const body = isJsonContentType(request) ? await readJsonBody(request) : null;
+  // JSON 이 아니거나 깨진 본문도 기존과 같은 400 문구로 답한다(화면 문구 유지).
+  if (body instanceof Response || !isRecord(body) || typeof body.text !== 'string' || !body.text.trim() || body.text.length > 1000) {
     return Response.json({ error: '질문을 1~1000자로 입력해 주세요.' }, { status: 400 });
   }
 
@@ -95,8 +119,9 @@ export async function POST(request: Request) {
       tasks: selected.map((t) => toMatchedTask(t, profile?.moveInDate ?? null, today)),
     };
     return Response.json(response, { headers: { 'Cache-Control': 'no-store' } });
-  } catch {
-    // 질문 본문·프로필·DB 접속 정보는 로그나 오류 응답에 노출하지 않는다.
+  } catch (error) {
+    // 질문 본문·프로필·DB 접속 정보는 로그나 오류 응답에 노출하지 않는다. 고정된 분류만 남긴다.
+    console.warn(`[ask] 질문 처리 실패: ${failureKind(error)}`);
     return Response.json({ error: '질문을 처리하지 못했습니다. 잠시 후 다시 시도해 주세요.' }, { status: 503 });
   }
 }
