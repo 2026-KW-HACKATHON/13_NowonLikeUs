@@ -4,13 +4,29 @@ import { useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { ANSWER_MAX, validateAnswer } from '@/lib/answerValidation';
 import { readApiError } from '@/lib/authView';
-import { QUESTION_TABS, answerSlot, askerContext, confirmSlot, timeAgo, withAnswer, withConfirm } from '@/lib/questionBoard';
+import { canDeleteQuestion } from '@/lib/moderation';
+import {
+  QUESTION_TABS,
+  answerSlot,
+  askerContext,
+  confirmSlot,
+  isModerator,
+  timeAgo,
+  withAnswer,
+  withAnswerHidden,
+  withAnswerRestored,
+  withConfirm,
+  withoutQuestion,
+} from '@/lib/questionBoard';
 import { loadSession, useSession } from '@/lib/useSession';
 import type {
   AnswerItem,
   ConfirmAnswerResponse,
   CreateAnswerRequest,
   CreateAnswerResponse,
+  DeleteQuestionResponse,
+  HideAnswerRequest,
+  HideAnswerResponse,
   QuestionItem,
   QuestionListResponse,
   QuestionStatus,
@@ -22,10 +38,15 @@ type Load = { kind: 'loading' } | { kind: 'failed'; message: string } | { kind: 
  * 질문 목록. 탭이 바뀌면 부모가 `key` 로 새로 만들어서, 불러오는 중 상태부터 다시 시작한다.
  *
  * 주민 답변은 운영자가 확인하기 전 정보다. 화면 어디서도 확인된 정보처럼 보이게 하지 않는다.
+ *
+ * 운영자(ADMIN)에게만 정리 버튼이 보인다 — 질문 지우기(되돌릴 수 없어 한 번 더 묻는다) · 답변 숨기기(되돌릴 수 있다).
+ * 질문은 로그인 없이 올라와 표지에도 뜨므로, 장난 · 욕설 · 개인정보를 시연 중에도 화면에서 바로 내리기 위한 것이다.
  */
 export default function QuestionBoard({ status }: { status: QuestionStatus }) {
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
+  // 질문을 지우면 그 카드가 사라져 결과를 알릴 자리가 없다. 목록 위에서 알린다.
+  const [notice, setNotice] = useState<string | null>(null);
   const tab = QUESTION_TABS.find((t) => t.status === status)!;
 
   useEffect(() => {
@@ -94,21 +115,43 @@ export default function QuestionBoard({ status }: { status: QuestionStatus }) {
     );
   }
 
-  if (load.questions.length === 0) return <p className="empty">{tab.empty}</p>;
+  const noticeLine = notice && (
+    <p className="qboard__notice" role="status">
+      {notice}
+    </p>
+  );
+
+  if (load.questions.length === 0) {
+    return (
+      <>
+        {noticeLine}
+        <p className="empty">{tab.empty}</p>
+      </>
+    );
+  }
 
   return (
-    <ol className="qlist">
-      {load.questions.map((q) => (
-        <li key={q.id}>
-          <QuestionCard
-            question={q}
-            isTarget={q.id === targetId}
-            onAnswered={(answer) => update((list) => withAnswer(list, q.id, answer))}
-            onConfirmed={(answerId, res) => update((list) => withConfirm(list, answerId, res))}
-          />
-        </li>
-      ))}
-    </ol>
+    <>
+      {noticeLine}
+      <ol className="qlist">
+        {load.questions.map((q) => (
+          <li key={q.id}>
+            <QuestionCard
+              question={q}
+              isTarget={q.id === targetId}
+              onAnswered={(answer) => update((list) => withAnswer(list, q.id, answer))}
+              onConfirmed={(answerId, res) => update((list) => withConfirm(list, answerId, res))}
+              onDeleted={() => {
+                update((list) => withoutQuestion(list, q.id));
+                setNotice('질문을 지웠습니다. 표지와 이 목록에서 더 보이지 않습니다.');
+              }}
+              onHidden={(answerId, status) => update((list) => withAnswerHidden(list, answerId, status))}
+              onRestored={(answer, status) => update((list) => withAnswerRestored(list, answer, status))}
+            />
+          </li>
+        ))}
+      </ol>
+    </>
   );
 }
 
@@ -117,13 +160,22 @@ function QuestionCard({
   isTarget,
   onAnswered,
   onConfirmed,
+  onDeleted,
+  onHidden,
+  onRestored,
 }: {
   question: QuestionItem;
   isTarget: boolean;
   onAnswered: (answer: AnswerItem) => void;
   onConfirmed: (answerId: string, res: ConfirmAnswerResponse) => void;
+  onDeleted: () => void;
+  onHidden: (answerId: string, status: QuestionStatus) => void;
+  onRestored: (answer: AnswerItem, status: QuestionStatus) => void;
 }) {
   const session = useSession();
+  const moderator = isModerator(session.user);
+  // 방금 숨긴 답변. 목록에서는 빠지지만 되돌릴 수 있게 이 카드가 들고 있는다(새로고침하면 사라진다).
+  const [hidden, setHidden] = useState<AnswerItem[]>([]);
   const context = askerContext(q);
   const headingId = useId();
   const now = new Date();
@@ -158,10 +210,33 @@ function QuestionCard({
                 now={now}
                 canConfirm={confirmSlot(a, { loggedIn: session.user !== null, status: q.status }) === 'button'}
                 onConfirmed={onConfirmed}
+                onHide={
+                  moderator
+                    ? (status) => {
+                        setHidden((list) => [...list, a]);
+                        onHidden(a.id, status);
+                      }
+                    : undefined
+                }
               />
             ))}
           </ul>
         </section>
+      )}
+
+      {moderator && hidden.length > 0 && (
+        <ul className="answers__list answers__list--hidden" aria-label="숨긴 답변">
+          {hidden.map((a) => (
+            <HiddenAnswerRow
+              key={a.id}
+              answer={a}
+              onRestored={(status) => {
+                setHidden((list) => list.filter((h) => h.id !== a.id));
+                onRestored(a, status);
+              }}
+            />
+          ))}
+        </ul>
       )}
 
       {slot === 'closed' && <p className="qcard__closed">이 질문은 확인을 거쳐 할 일 목록에 올라갔습니다.</p>}
@@ -171,6 +246,7 @@ function QuestionCard({
         </Link>
       )}
       {slot === 'form' && <AnswerForm questionId={q.id} onAnswered={onAnswered} />}
+      {moderator && canDeleteQuestion(q.status) && <DeleteQuestion questionId={q.id} onDeleted={onDeleted} />}
     </article>
   );
 }
@@ -180,11 +256,14 @@ function AnswerRow({
   now,
   canConfirm,
   onConfirmed,
+  onHide,
 }: {
   answer: AnswerItem;
   now: Date;
   canConfirm: boolean;
   onConfirmed: (answerId: string, res: ConfirmAnswerResponse) => void;
+  /** 운영자에게만 넘어온다. 숨기기에 성공하면 서버가 다시 맞춘 질문 상태와 함께 부른다. */
+  onHide?: (questionStatus: QuestionStatus) => void;
 }) {
   const [sending, setSending] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -228,6 +307,23 @@ function AnswerRow({
           </button>
         ) : (
           <span className="confirm confirm--static">맞아요 {a.confirmationCount}</span>
+        )}
+        {onHide && (
+          <button
+            type="button"
+            className="mod-button"
+            onClick={async () => {
+              setSending(true);
+              setMessage(null);
+              const result = await setAnswerHidden(a.id, true);
+              setSending(false);
+              if (typeof result === 'string') setMessage(result);
+              else onHide(result.questionStatus);
+            }}
+            disabled={sending}
+          >
+            답변 숨기기
+          </button>
         )}
       </div>
       {message && (
@@ -349,5 +445,124 @@ function AnswerForm({ questionId, onAnswered }: { questionId: string; onAnswered
         </button>
       </div>
     </form>
+  );
+}
+
+/** 운영자 요청 공통. 401 · 403 이면 세션을 다시 읽어 버튼을 거둔다. 실패하면 화면에 띄울 문장을 돌려준다. */
+async function moderate<T>(request: () => Promise<Response>, fallback: string): Promise<T | string> {
+  try {
+    const res = await request();
+    if (res.status === 401 || res.status === 403) await loadSession(true);
+    if (!res.ok) return await readApiError(res, fallback);
+    return (await res.json()) as T;
+  } catch {
+    return '연결이 끊겼습니다. 잠시 후 다시 시도해 주세요.';
+  }
+}
+
+function setAnswerHidden(answerId: string, isHidden: boolean): Promise<HideAnswerResponse | string> {
+  const body: HideAnswerRequest = { isHidden };
+  return moderate<HideAnswerResponse>(
+    () =>
+      fetch(`/api/admin/answers/${answerId}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
+      }),
+    isHidden ? '답변을 숨기지 못했습니다.' : '답변을 되돌리지 못했습니다.',
+  );
+}
+
+/** 운영자가 방금 숨긴 답변 자리. 다른 사람에게는 이미 안 보인다. */
+function HiddenAnswerRow({ answer: a, onRestored }: { answer: AnswerItem; onRestored: (status: QuestionStatus) => void }) {
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+
+  return (
+    <li className="answer-row answer-row--hidden">
+      <p className="answer-row__hidden" role="status">
+        {a.authorNickname} 님의 답변을 숨겼습니다. 다른 사람에게는 보이지 않습니다.
+      </p>
+      <button
+        type="button"
+        className="mod-button"
+        onClick={async () => {
+          setSending(true);
+          setMessage(null);
+          const result = await setAnswerHidden(a.id, false);
+          setSending(false);
+          if (typeof result === 'string') setMessage(result);
+          else onRestored(result.questionStatus);
+        }}
+        disabled={sending}
+      >
+        되돌리기
+      </button>
+      {message && (
+        <p className="field-error" role="status">
+          {message}
+        </p>
+      )}
+    </li>
+  );
+}
+
+/**
+ * 질문 지우기. 답변 · 맞아요까지 같이 지워지고 되돌릴 수 없어서, 브라우저 확인 창 대신 같은 자리에서 한 번 더 묻는다.
+ * 할 일로 정리된 질문에는 이 버튼을 띄우지 않는다(서버도 409).
+ */
+function DeleteQuestion({ questionId, onDeleted }: { questionId: string; onDeleted: () => void }) {
+  const [asking, setAsking] = useState(false);
+  const [sending, setSending] = useState(false);
+  const [message, setMessage] = useState<string | null>(null);
+  const confirmRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    if (asking) confirmRef.current?.focus();
+  }, [asking]);
+
+  if (!asking) {
+    return (
+      <div className="qcard__mod">
+        <button type="button" className="mod-button" onClick={() => setAsking(true)}>
+          질문 지우기 (운영자)
+        </button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="qcard__mod qcard__mod--confirm" role="group" aria-label="질문 지우기 확인">
+      <p className="qcard__mod-ask">이 질문을 지울까요? 달린 답변과 맞아요도 같이 지워지고, 되돌릴 수 없습니다.</p>
+      <div className="qcard__mod-actions">
+        <button
+          ref={confirmRef}
+          type="button"
+          className="mod-button mod-button--danger"
+          onClick={async () => {
+            setSending(true);
+            setMessage(null);
+            const result = await moderate<DeleteQuestionResponse>(
+              () => fetch(`/api/admin/questions/${questionId}`, { method: 'DELETE' }),
+              '질문을 지우지 못했습니다.',
+            );
+            setSending(false);
+            if (typeof result === 'string') setMessage(result);
+            else onDeleted();
+          }}
+          disabled={sending}
+        >
+          {sending ? '지우는 중…' : '지우기'}
+        </button>
+        <button type="button" className="mod-button" onClick={() => setAsking(false)} disabled={sending}>
+          취소
+        </button>
+      </div>
+      {message && (
+        <p className="field-error" role="status">
+          {message}
+        </p>
+      )}
+    </div>
   );
 }

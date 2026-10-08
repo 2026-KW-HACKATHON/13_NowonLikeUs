@@ -1,5 +1,8 @@
 import { describe, it, expect } from 'vitest';
-import { answerSlot, askerContext, confirmSlot, parseTab, timeAgo, withAnswer, withConfirm } from '@/lib/questionBoard';
+import {
+  answerSlot, askerContext, confirmSlot, isModerator, parseTab, timeAgo, withAnswer, withAnswerHidden, withAnswerRestored,
+  withConfirm, withoutQuestion,
+} from '@/lib/questionBoard';
 import type { AnswerItem, QuestionItem } from '@/lib/types';
 
 function answer(id: string, over: Partial<AnswerItem> = {}): AnswerItem {
@@ -156,5 +159,60 @@ describe('confirmSlot', () => {
 
   it('할 일로 정리된 질문은 개수만', () => {
     expect(confirmSlot(others, { loggedIn: true, status: 'PROMOTED' })).toBe('count');
+  });
+});
+
+describe('isModerator', () => {
+  it('ADMIN 만 운영자 버튼을 본다', () => {
+    expect(isModerator({ role: 'ADMIN' })).toBe(true);
+    expect(isModerator({ role: 'MEMBER' })).toBe(false);
+    expect(isModerator(null)).toBe(false);
+  });
+});
+
+describe('withoutQuestion', () => {
+  it('지운 질문만 빠진다', () => {
+    const list = [question('q1'), question('q2')];
+    expect(withoutQuestion(list, 'q1').map((q) => q.id)).toEqual(['q2']);
+  });
+
+  it('없는 id 면 그대로', () => {
+    const list = [question('q1')];
+    expect(withoutQuestion(list, 'zz')).toEqual(list);
+  });
+});
+
+describe('withAnswerHidden', () => {
+  it('숨긴 답변이 빠지고 질문 상태는 서버 값을 따른다', () => {
+    const list = [question('q1', { status: 'ANSWERED', answers: [answer('a1')] }), question('q2')];
+    const next = withAnswerHidden(list, 'a1', 'OPEN');
+    expect(next[0].answers).toEqual([]);
+    expect(next[0].status).toBe('OPEN');
+    expect(next[1]).toBe(list[1]);
+  });
+
+  it('다른 답변이 남으면 그 답변은 그대로', () => {
+    const list = [question('q1', { status: 'ANSWERED', answers: [answer('a1'), answer('a2')] })];
+    const next = withAnswerHidden(list, 'a1', 'ANSWERED');
+    expect(next[0].answers.map((a) => a.id)).toEqual(['a2']);
+    expect(next[0].status).toBe('ANSWERED');
+  });
+});
+
+describe('withAnswerRestored', () => {
+  it('되돌린 답변은 작성 시각 순서대로 제자리에 들어간다', () => {
+    const a1 = answer('a1', { createdAt: '2026-10-06T01:00:00Z' });
+    const a2 = answer('a2', { createdAt: '2026-10-06T02:00:00Z' });
+    const a3 = answer('a3', { createdAt: '2026-10-06T03:00:00Z' });
+    const list = [question('q1', { status: 'ANSWERED', answers: [a1, a3] })];
+    expect(withAnswerRestored(list, a2, 'ANSWERED')[0].answers.map((a) => a.id)).toEqual(['a1', 'a2', 'a3']);
+  });
+
+  it('질문 상태를 서버 값으로 맞추고, 두 번 되돌려도 중복되지 않는다', () => {
+    const a1 = answer('a1');
+    const once = withAnswerRestored([question('q1', { status: 'OPEN' })], a1, 'ANSWERED');
+    const twice = withAnswerRestored(once, a1, 'ANSWERED');
+    expect(twice[0].status).toBe('ANSWERED');
+    expect(twice[0].answers.map((a) => a.id)).toEqual(['a1']);
   });
 });
