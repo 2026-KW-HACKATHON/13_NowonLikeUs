@@ -129,7 +129,8 @@ export default function AskScreen({ sendsToGoogle }: { sendsToGoogle: boolean })
               질문 내용과 주거형태 · 계약형태는 관련 항목을 찾기 위해 Google(Gemini)로 전송됩니다.{' '}
             </>
           )}
-          확인된 정보로 답하지 못한 질문은 주거형태 · 계약형태와 함께 &lsquo;이웃의 질문&rsquo;에 공개되어
+          확인된 정보로 답하지 못한 질문과 &lsquo;이웃에게 물어보기&rsquo;를 누른 질문은 주거형태 · 계약형태와 함께
+          &lsquo;이웃의 질문&rsquo;에 공개되어
           주민이 답할 수 있습니다. 이름 · 연락처 · 상세 주소 같은 개인정보는 적지 마세요.
         </p>
 
@@ -212,7 +213,8 @@ function AskResult({
       )}
 
       {/*
-        확인된 정보로 답하지 못한 질문(GROUNDED 가 아닌 것)은 '이웃의 질문'에 올라간다.
+        확인된 정보로 답하지 못한 질문(GROUNDED 가 아닌 것)은 '이웃의 질문'에 바로 올라간다.
+        GROUNDED 는 아래 AskNeighbors 버튼을 눌러야 올라간다.
         질문한 사람이 그걸 모르면 답이 달려도 다시 와 보지 않는다. 그 질문 위치로 바로 보낸다.
       */}
       {res.confidence !== 'GROUNDED' && <OnBoardNote questionId={res.questionId} />}

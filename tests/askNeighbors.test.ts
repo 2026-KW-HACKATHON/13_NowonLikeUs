@@ -51,4 +51,14 @@ describe('POST /api/questions/[id]/ask-neighbors', () => {
     expect(res.status).toBe(400);
     expect(db.findUnique).not.toHaveBeenCalled();
   });
+
+  it('미디어 타입이 정확히 application/json 일 때만 받는다', async () => {
+    const plain = await call('q1', { headers: { 'Content-Type': 'text/plain; application/json' }, body: '{}' });
+    expect(plain.status).toBe(400);
+    expect(db.findUnique).not.toHaveBeenCalled();
+
+    db.findUnique.mockResolvedValue({ askerId: null });
+    const charset = await call('q1', { headers: { 'Content-Type': 'Application/JSON; charset=utf-8' }, body: '{}' });
+    expect(charset.status).toBe(200);
+  });
 });

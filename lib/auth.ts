@@ -112,10 +112,12 @@ export async function requireAdmin(): Promise<SessionUser | Response> {
 /**
  * 변경 요청(POST)의 본문을 JSON 으로 읽는다. Content-Type 이 JSON 이 아니거나 깨졌으면 400 응답.
  * SameSite=Lax 쿠키와 함께 CSRF 를 기본적으로 막는다.
+ * 매개변수(charset 등)를 뺀 미디어 타입이 정확히 application/json 이어야 한다. 부분 일치로 보면
+ * 다른 사이트가 사전 요청 없이 보낼 수 있는 `text/plain; application/json` 도 통과한다.
  */
 export async function readJsonBody(request: Request): Promise<unknown | Response> {
-  const contentType = request.headers.get('content-type') ?? '';
-  if (!contentType.toLowerCase().includes('application/json')) {
+  const mediaType = (request.headers.get('content-type') ?? '').split(';')[0].trim().toLowerCase();
+  if (mediaType !== 'application/json') {
     return errorResponse('요청 형식이 올바르지 않습니다.', 400);
   }
   try {
