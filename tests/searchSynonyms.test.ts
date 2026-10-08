@@ -41,11 +41,29 @@ describe('keywordSearch 동의어 (실제 시드 · 프로필 후보)', () => {
     expect(titles(housingType, query)[0]).toBe('큰 가구 버리는 방법 알아두기 (대형폐기물)');
   });
 
-  it.each(['ONE_ROOM', 'APARTMENT'] as const)('%s 프로필에서 대형 가전은 검증되지 않은 가전·가구 카드로 잇지 않는다', (housingType) => {
-    for (const query of ['냉장고 버리기', '세탁기는 어떻게 버려요?', '에어컨 버리기', '텔레비전 버리기']) {
-      const result = titles(housingType, query);
-      expect(result.some((title) => title.includes('가전') || title.includes('대형폐기물'))).toBe(false);
+  // 검증된 대형 폐가전 카드가 시드에 생기기 전까지는 처리 방법이 다른 카드를 안내하지 않고 빈 결과로 둔다.
+  const largeApplianceQueries = [
+    '냉장고 버리기', '냉장고 버리는 방법', '냉장고 버리는 방법 알려주세요', '세탁기는 어떻게 버려요?', '에어컨 버리는 날',
+    '텔레비전 버리기', 'TV 버리려면', '김치냉장고 폐기', '대형 가전 버리기', '대형가전 버리는 방법', '대형 폐가전 수거 신청',
+  ];
+
+  it.each(['ONE_ROOM', 'VILLA', 'APARTMENT', 'OFFICETEL', 'DORM'] as const)('%s 프로필에서 대형 가전 폐기 질문은 빈 결과다', (housingType) => {
+    for (const query of largeApplianceQueries) {
+      expect(titles(housingType, query), query).toEqual([]);
     }
+  });
+
+  it('프로필 없이 시드 전체를 검색해도 대형 가전 폐기 질문은 빈 결과다', () => {
+    for (const query of largeApplianceQueries) {
+      expect(keywordSearch(seeds, query), query).toEqual([]);
+    }
+  });
+
+  it.each([
+    ['ONE_ROOM', '작은 가전 버리기', '작은 가전 버리는 요일 알아두기'],
+    ['APARTMENT', '드라이기 같은 작은 가전 버리는 곳', '작은 가전은 관리사무소에 먼저 물어보기'],
+  ] as const)('%s 프로필의 작은 가전 질문은 계속 작은 가전 카드를 찾는다: %s', (housingType, query, expected) => {
+    expect(titles(housingType, query)[0]).toBe(expected);
   });
 
   it.each(['강아지 등록', '애완견 등록하려면'])('강아지는 반려견 카드를 찾는다: %s', (query) => {

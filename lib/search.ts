@@ -35,6 +35,14 @@ const SYNONYM_GROUPS: [string[], string[]][] = [
 const SYNONYMS = new Map(SYNONYM_GROUPS.flatMap(([words, expanded]) => words.map((word) => [word, expanded] as const)));
 
 /**
+ * 시드에 검증된 안내 카드가 없는 폐기 질문. 띄어쓰기를 뺀 질문에 대상과 폐기 표현이 함께 있으면 빈 결과를 돌려준다.
+ * "냉장고 버리는 방법"이 "버리는" 하나로 생활쓰레기·작은 가전·대형폐기물 카드에 걸리는 것을 막는다.
+ * 검증된 대형 폐가전 카드가 시드에 생기면 이 규칙 대신 그 카드로 잇는다.
+ */
+const UNVERIFIED_DISPOSAL_ITEM = /냉장고|세탁기|에어컨|텔레비전|티비|tv|건조기|대형가전|대형폐가전/u;
+const DISPOSAL = /버리|버려|버릴|버린|폐기|배출|수거|처분|내놓/u;
+
+/**
  * Gemini 호출 실패 시 사용할 키워드 검색.
  * 서로 다른 키워드의 부분 문자열 일치 수로 정렬하며 원본 데이터는 수정하지 않는다.
  * 의미 있는 키워드가 둘 이상인 질문에서 하나만 걸린 항목은 제목에 걸렸을 때만 인정한다.
@@ -52,6 +60,11 @@ export function keywordSearch<
 
   const normalizedQuery = query.trim().toLowerCase();
   if (!normalizedQuery) {
+    return [];
+  }
+
+  const compactQuery = normalizedQuery.replace(/\s+/gu, '');
+  if (UNVERIFIED_DISPOSAL_ITEM.test(compactQuery) && DISPOSAL.test(compactQuery)) {
     return [];
   }
 
