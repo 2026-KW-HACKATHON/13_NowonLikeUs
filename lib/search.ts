@@ -101,7 +101,8 @@ export function keywordSearch<
     return [];
   }
 
-  const normalizedQuery = query.trim().toLowerCase();
+  // "분리 수거"처럼 띄어 쓴 주제어는 동의어 표의 붙여 쓴 형태로 맞춘다.
+  const normalizedQuery = query.trim().toLowerCase().replace(/분리\s+수거/gu, '분리수거');
   if (!normalizedQuery) {
     return [];
   }

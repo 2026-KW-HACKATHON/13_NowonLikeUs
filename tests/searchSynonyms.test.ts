@@ -122,7 +122,7 @@ describe('keywordSearch 동의어 (실제 시드 · 프로필 후보)', () => {
     ['ONE_ROOM', '재활용 버리는 요일 알아두기'],
     ['APARTMENT', '우리 단지 분리배출 요일 확인하기'],
   ] as const)('%s 프로필의 흔한 재활용 질문은 재활용 카드만 찾는다', (housingType, expected) => {
-    for (const query of ['분리수거', '분리수거 언제 해요?', '재활용 버리는 날', '페트병 버리는 날', '비닐 버리는 요일', '스티로폼 버리기']) {
+    for (const query of ['분리수거', '분리수거 언제 해요?', '분리 수거 언제 해요?', '재활용 버리는 날', '페트병 버리는 날', '비닐 버리는 요일', '스티로폼 버리기']) {
       expect(titles(housingType, query), query).toEqual([expected]);
     }
   });
