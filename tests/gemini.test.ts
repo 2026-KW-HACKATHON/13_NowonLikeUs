@@ -152,6 +152,8 @@ describe('askGemini', () => {
       ['생성 텍스트 파싱 실패', () => fetchMock.mockResolvedValueOnce(Response.json({ candidates: [{ finishReason: 'STOP', content: { parts: [{ text: 'not json' }] } }] })), 'parse'],
       ['응답 없음', () => fetchMock.mockResolvedValueOnce(Response.json({ candidates: [] })), 'empty'],
       ['비정상 종료', () => fetchMock.mockResolvedValueOnce(response(selection, 'SAFETY')), 'finish SAFETY'],
+      ['알 수 없는 종료 사유', () => fetchMock.mockResolvedValueOnce(response(selection, '전입신고 test-key 임의 값')), 'finish unknown'],
+      ['종료 사유 없음', () => fetchMock.mockResolvedValueOnce(Response.json({ candidates: [{ content: { parts: [] } }] })), 'finish missing'],
       ['형식 오류', () => fetchMock.mockResolvedValueOnce(response({ sourceIds: 'task:a', confidence: 'GROUNDED' })), 'schema'],
     ])('%s은 실패 종류만 남긴다', async (_label, arrange, kind) => {
       arrange();

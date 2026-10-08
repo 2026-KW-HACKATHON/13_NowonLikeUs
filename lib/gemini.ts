@@ -23,6 +23,17 @@ function fail(kind: string): null {
   return null;
 }
 
+/** 로그에 남겨도 되는 Gemini 종료 사유. 응답에 담긴 다른 값은 그대로 쓰지 않는다. */
+const FINISH_REASONS = new Set([
+  'MAX_TOKENS', 'SAFETY', 'RECITATION', 'LANGUAGE', 'OTHER', 'BLOCKLIST', 'PROHIBITED_CONTENT', 'SPII',
+  'MALFORMED_FUNCTION_CALL', 'IMAGE_SAFETY', 'UNEXPECTED_TOOL_CALL', 'FINISH_REASON_UNSPECIFIED',
+]);
+
+function finishKind(reason: unknown): string {
+  if (reason === undefined) return 'missing';
+  return typeof reason === 'string' && FINISH_REASONS.has(reason) ? reason : 'unknown';
+}
+
 /**
  * 호출/형식 검증 실패는 null로 반환한다. 호출자가 키워드 검색으로 폴백한다.
  * 반환값은 미검증 AI 선택 결과다. 응답·저장 전 반드시 groundAnswer를 거쳐야 한다.
@@ -72,7 +83,7 @@ export async function askGemini(
     const candidate: unknown = payload.candidates[0];
     if (!isRecord(candidate)) return fail('empty');
     if (candidate.finishReason !== 'STOP') {
-      return fail(`finish ${typeof candidate.finishReason === 'string' ? candidate.finishReason : 'missing'}`);
+      return fail(`finish ${finishKind(candidate.finishReason)}`);
     }
     if (!isRecord(candidate.content)) return fail('empty');
     const parts = candidate.content.parts;
