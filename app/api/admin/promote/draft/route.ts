@@ -47,7 +47,6 @@ export async function POST(request: Request) {
   }
 
   // 주민 질문 · 답변을 외부로 보내는 일이라 질문 화면과 같은 스위치를 따른다.
-  // TODO(권섭): 운영자 초안만 따로 켜는 스위치가 필요한지 결정.
   if (process.env.GEMINI_ALLOW_USER_INPUT !== 'true') return noDraft();
 
   const source: DraftSource = {
