@@ -27,7 +27,9 @@ function emit(next: SessionState) {
 export function loadSession(force = false): Promise<void> {
   if (inflight && !force) return inflight;
   inflight = fetch('/api/auth/me', { cache: 'no-store' })
-    .then((res) => (res.ok ? (res.json() as Promise<MeResponse>) : { user: null }))
+    .then((res): MeResponse | Promise<MeResponse> =>
+      res.ok ? (res.json() as Promise<MeResponse>) : { user: null, neighborhoodVerified: false },
+    )
     .then((body) => emit({ loaded: true, user: body.user ?? null }))
     // 확인을 못 하면 비로그인으로 본다. 보기 화면은 로그인 없이도 전부 동작한다.
     .catch(() => emit({ loaded: true, user: null }));

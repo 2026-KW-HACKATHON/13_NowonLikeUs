@@ -8,7 +8,8 @@ import type { AnswerItem, QuestionItem } from '@/lib/types';
 function answer(id: string, over: Partial<AnswerItem> = {}): AnswerItem {
   return {
     id, questionId: 'q1', authorNickname: '주민', text: id,
-    confirmationCount: 0, confirmedByMe: false, authoredByMe: false, createdAt: '2026-10-06T00:00:00Z', ...over,
+    confirmationCount: 0, confirmedByMe: false, authoredByMe: false, authorNeighborhoodVerified: false,
+    createdAt: '2026-10-06T00:00:00Z', ...over,
   };
 }
 
