@@ -1488,6 +1488,65 @@ button:disabled {
   color: var(--accent);
 }
 
+/* ---------- 노원 동네 인증 (선택) ---------- */
+
+/* 작성자가 노원구 안에서 위치를 확인했다는 표시. 답의 내용을 확인했다는 뜻이 아니라서 작고 테두리만. */
+.nbadge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 0 7px;
+  border: 1.5px solid var(--accent);
+  border-radius: 999px;
+  color: var(--accent);
+  font-size: 13px;
+  font-weight: 700;
+  line-height: 1.6;
+  white-space: nowrap;
+  vertical-align: 1px;
+}
+
+.nverify__state .nbadge {
+  margin-left: 0;
+}
+
+/* 답변 쓰기 칸 아래. 답변 남기기와 다른 일이라 선으로 나눈다. */
+.nverify {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  padding-top: var(--space-3);
+  border-top: 1px solid var(--rule-soft);
+}
+
+.nverify--done {
+  grid-template-columns: 1fr auto;
+  align-items: center;
+}
+
+.nverify--done .nverify__msg {
+  grid-column: 1 / -1;
+}
+
+.nverify__note,
+.nverify__state {
+  margin: 0;
+  font-size: 15px;
+  color: var(--text-soft);
+}
+
+.nverify__msg {
+  margin: 0;
+  padding: var(--space-1) var(--space-2);
+  border-left: 4px solid var(--conf-partial);
+  background: var(--conf-partial-soft);
+  font-size: 15px;
+}
+
+.nverify__msg--ok {
+  border-left-color: var(--accent);
+  background: var(--accent-soft);
+}
+
 /* ---------- 승격 (운영자) ---------- */
 
 .queue-note {

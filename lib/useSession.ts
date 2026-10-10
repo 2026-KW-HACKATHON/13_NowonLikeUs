@@ -10,9 +10,14 @@ import type { MeResponse, SessionUser } from '@/lib/types';
  * 로그인한 사람에게도 "로그인하세요"가 한 번 깜빡인다.
  * 세션 자체는 httpOnly 쿠키라 화면이 읽을 수 없고, /api/auth/me 로만 확인한다.
  */
-export type SessionState = { loaded: boolean; user: SessionUser | null };
+export type SessionState = {
+  loaded: boolean;
+  user: SessionUser | null;
+  /** 노원 동네 인증이 유효한가(180일 이내). 로그인 안 했으면 false. */
+  neighborhoodVerified: boolean;
+};
 
-const UNKNOWN: SessionState = { loaded: false, user: null };
+const UNKNOWN: SessionState = { loaded: false, user: null, neighborhoodVerified: false };
 
 let state: SessionState = UNKNOWN;
 let inflight: Promise<void> | null = null;
@@ -30,9 +35,11 @@ export function loadSession(force = false): Promise<void> {
     .then((res): MeResponse | Promise<MeResponse> =>
       res.ok ? (res.json() as Promise<MeResponse>) : { user: null, neighborhoodVerified: false },
     )
-    .then((body) => emit({ loaded: true, user: body.user ?? null }))
+    .then((body) =>
+      emit({ loaded: true, user: body.user ?? null, neighborhoodVerified: body.user ? body.neighborhoodVerified === true : false }),
+    )
     // 확인을 못 하면 비로그인으로 본다. 보기 화면은 로그인 없이도 전부 동작한다.
-    .catch(() => emit({ loaded: true, user: null }));
+    .catch(() => emit({ loaded: true, user: null, neighborhoodVerified: false }));
   return inflight;
 }
 
@@ -56,5 +63,11 @@ export function useSession(): SessionState {
 export async function logout(): Promise<void> {
   await fetch('/api/auth/logout', { method: 'POST' });
   inflight = null;
-  emit({ loaded: true, user: null });
+  emit({ loaded: true, user: null, neighborhoodVerified: false });
+}
+
+/** 동네 인증 · 인증 지우기가 성공한 직후. 서버에 다시 묻지 않고 화면 상태만 맞춘다. */
+export function setNeighborhoodVerified(verified: boolean): void {
+  if (!state.user) return;
+  emit({ ...state, neighborhoodVerified: verified });
 }

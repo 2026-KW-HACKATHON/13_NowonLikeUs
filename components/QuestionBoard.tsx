@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { ANSWER_MAX, validateAnswer } from '@/lib/answerValidation';
 import { readApiError } from '@/lib/authView';
 import { canDeleteQuestion } from '@/lib/moderation';
+import { withMyNeighborhood } from '@/lib/neighborhoodView';
 import {
   QUESTION_TABS,
   answerSlot,
@@ -34,6 +35,7 @@ import type {
   QuestionListResponse,
   QuestionStatus,
 } from '@/lib/types';
+import NeighborhoodVerify from './NeighborhoodVerify';
 
 type Load =
   | { kind: 'loading' }
@@ -169,6 +171,7 @@ export default function QuestionBoard({ status }: { status: BoardTab }) {
               }}
               onHidden={(answerId, status) => update((list) => withAnswerHidden(list, answerId, status))}
               onRestored={(answer, status) => update((list) => withAnswerRestored(list, answer, status))}
+              onNeighborhood={(verified) => update((list) => withMyNeighborhood(list, verified))}
             />
           </li>
         ))}
@@ -186,6 +189,7 @@ function QuestionCard({
   onDeleted,
   onHidden,
   onRestored,
+  onNeighborhood,
 }: {
   question: QuestionItem;
   /** "내 질문" 탭의 카드. 상태 글자를 붙이고 답변 쓰기 칸은 띄우지 않는다. */
@@ -196,6 +200,8 @@ function QuestionCard({
   onDeleted: () => void;
   onHidden: (answerId: string, status: QuestionStatus) => void;
   onRestored: (answer: AnswerItem, status: QuestionStatus) => void;
+  /** 동네 인증 · 인증 지우기 직후. 목록 전체의 내 답변 배지를 맞춘다. */
+  onNeighborhood: (verified: boolean) => void;
 }) {
   const session = useSession();
   const moderator = isModerator(session.user);
@@ -277,7 +283,7 @@ function QuestionCard({
           로그인하고 답하기
         </Link>
       )}
-      {!mine && slot === 'form' && <AnswerForm questionId={q.id} onAnswered={onAnswered} />}
+      {!mine && slot === 'form' && <AnswerForm questionId={q.id} onAnswered={onAnswered} onNeighborhood={onNeighborhood} />}
       {moderator && canDeleteQuestion(q.status) && <DeleteQuestion questionId={q.id} onDeleted={onDeleted} />}
     </article>
   );
@@ -324,7 +330,9 @@ function AnswerRow({
       <div className="answer-row__foot">
         <span className="answer-row__by">
           {a.authoredByMe && <span className="answer-row__mine">내 답변 · </span>}
-          {a.authorNickname} · {timeAgo(a.createdAt, now)}
+          {a.authorNickname}
+          {/* 작성자가 노원구 안에서 위치를 확인했다는 표시일 뿐, 답의 내용을 확인했다는 뜻이 아니다. */}
+          {a.authorNeighborhoodVerified && <span className="nbadge">노원 인증</span>} · {timeAgo(a.createdAt, now)}
         </span>
         {canConfirm ? (
           <button
@@ -367,7 +375,15 @@ function AnswerRow({
   );
 }
 
-function AnswerForm({ questionId, onAnswered }: { questionId: string; onAnswered: (answer: AnswerItem) => void }) {
+function AnswerForm({
+  questionId,
+  onAnswered,
+  onNeighborhood,
+}: {
+  questionId: string;
+  onAnswered: (answer: AnswerItem) => void;
+  onNeighborhood: (verified: boolean) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -476,6 +492,7 @@ function AnswerForm({ questionId, onAnswered }: { questionId: string; onAnswered
           취소
         </button>
       </div>
+      <NeighborhoodVerify onChange={onNeighborhood} />
     </form>
   );
 }
