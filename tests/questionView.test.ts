@@ -16,7 +16,7 @@ const answer = (over: Partial<AnswerRow> = {}): AnswerRow => ({
   text: '목요일에 내놓으면 돼요',
   createdAt: new Date('2026-10-01T00:00:00Z'),
   authorId: 'author-1',
-  author: { nickname: '월계주민' },
+  author: { nickname: '월계주민', neighborhoodVerifiedAt: null },
   _count: { confirmations: 0 },
   confirmations: [],
   ...over,
@@ -66,9 +66,40 @@ describe('toAnswerItem', () => {
   it('결과에 이메일 · 작성자 id 가 없다', () => {
     const item = toAnswerItem(answer(), 'author-1');
     expect(Object.keys(item).sort()).toEqual(
-      ['authorNickname', 'authoredByMe', 'confirmationCount', 'confirmedByMe', 'createdAt', 'id', 'questionId', 'text'],
+      [
+        'authorNeighborhoodVerified',
+        'authorNickname',
+        'authoredByMe',
+        'confirmationCount',
+        'confirmedByMe',
+        'createdAt',
+        'id',
+        'questionId',
+        'text',
+      ],
     );
     expect(JSON.stringify(item)).not.toContain('author-1');
+  });
+
+  describe('작성자 동네 인증 배지', () => {
+    const verifiedAt = new Date('2026-10-10T03:00:00Z');
+    const verified = (at: Date | null) => answer({ author: { nickname: '월계주민', neighborhoodVerifiedAt: at } });
+
+    it('인증한 적 없으면 false', () => {
+      expect(toAnswerItem(verified(null), null, verifiedAt).authorNeighborhoodVerified).toBe(false);
+    });
+
+    it('180일 안이면 true, 지나면 false', () => {
+      expect(toAnswerItem(verified(verifiedAt), null, new Date('2026-10-11T00:00:00Z')).authorNeighborhoodVerified).toBe(true);
+      expect(toAnswerItem(verified(verifiedAt), null, new Date('2027-04-08T03:00:00Z')).authorNeighborhoodVerified).toBe(false);
+    });
+
+    // 날짜가 실리면 "언제 노원에 있었는지"가 다른 사람에게 보인다. 참 · 거짓만 내린다.
+    it('인증 날짜는 응답에 싣지 않는다', () => {
+      const item = toAnswerItem(verified(verifiedAt), null, verifiedAt);
+      expect(JSON.stringify(item)).not.toContain('2026-10-10T03');
+      expect(JSON.stringify(item)).not.toContain('neighborhoodVerifiedAt');
+    });
   });
 });
 
@@ -77,6 +108,18 @@ describe('toQuestionItem', () => {
     const row = question({ answers: [answer({ id: 'mine', authorId: 'me' }), answer({ id: 'theirs', authorId: 'other' })] });
     expect(toQuestionItem(row, { viewerId: 'me' }).answers.map((a) => a.authoredByMe)).toEqual([true, false]);
     expect(toQuestionItem(row).answers.map((a) => a.authoredByMe)).toEqual([false, false]);
+  });
+
+  it('답변마다 작성자 동네 인증을 같은 기준 시각(now)으로 판정한다', () => {
+    const row = question({
+      answers: [
+        answer({ id: 'fresh', author: { nickname: '새로 인증', neighborhoodVerifiedAt: new Date('2026-10-01T00:00:00Z') } }),
+        answer({ id: 'old', author: { nickname: '오래전 인증', neighborhoodVerifiedAt: new Date('2026-01-01T00:00:00Z') } }),
+        answer({ id: 'none' }),
+      ],
+    });
+    const item = toQuestionItem(row, { now: new Date('2026-10-10T00:00:00Z') });
+    expect(item.answers.map((a) => a.authorNeighborhoodVerified)).toEqual([true, false, false]);
   });
 
   it('답변 순서는 받은 순서(오래된 순) 그대로 둔다', () => {
