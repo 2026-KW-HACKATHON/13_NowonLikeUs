@@ -1378,6 +1378,19 @@ button:disabled {
   font-weight: 700;
 }
 
+/* 비로그인일 때 질문하기 위의 안내. 결과 안내(.ask-next)와 같은 결이되, 질문 전이라 한 단계 약하게 테두리만. */
+.ask-login {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1.5px solid var(--rule-soft);
+  border-left: 5px solid var(--accent);
+  font-size: 16px;
+}
+
+.ask-login a {
+  font-weight: 700;
+}
+
 /* 확인된 답이 원하던 답이 아닐 때 이웃에게 넘기는 자리. 카드 아래, 주 버튼보다 한 단계 약하게. */
 .ask-neighbors {
   display: grid;
