@@ -5,15 +5,47 @@ import type { AnswerItem, ConfirmAnswerResponse, QuestionItem, QuestionStatus } 
  * 질문 목록 화면(/questions)의 판정 로직. 서버 응답을 화면 상태에 반영하는 규칙을 여기 모아 테스트한다.
  */
 
-export const QUESTION_TABS: readonly { status: QuestionStatus; label: string; empty: string }[] = [
+/** 질문 목록의 탭. 상태별 셋에 더해, 로그인한 사람에게만 "내 질문"(MINE)이 보인다. */
+export type BoardTab = QuestionStatus | 'MINE';
+
+export const QUESTION_TABS: readonly { status: BoardTab; label: string; empty: string }[] = [
+  {
+    status: 'MINE',
+    label: '내 질문',
+    empty: '아직 이웃에게 넘어간 내 질문이 없습니다. 확인된 정보로 답하지 못했거나 "이웃에게 물어보기"를 누른 질문이 여기 모입니다.',
+  },
   { status: 'OPEN', label: '답을 기다려요', empty: '지금은 답을 기다리는 질문이 없습니다.' },
   { status: 'ANSWERED', label: '답이 달렸어요', empty: '아직 답이 달린 질문이 없습니다.' },
   { status: 'PROMOTED', label: '할 일이 됐어요', empty: '아직 할 일로 정리된 질문이 없습니다.' },
 ];
 
-/** `?status=` 를 탭으로. 모르는 값이면 답을 기다리는 질문부터 보여준다 — 이 화면에 온 이유가 그것이다. */
-export function parseTab(raw: string | string[] | undefined): QuestionStatus {
+/**
+ * `?status=` 를 탭으로. 모르는 값이면 답을 기다리는 질문부터 보여준다 — 이 화면에 온 이유가 그것이다.
+ * "내 질문"은 로그인했을 때만 연다. 비로그인이면 탭이 없으니 답을 기다리는 질문으로 돌린다.
+ */
+export function parseTab(raw: string | string[] | undefined, loggedIn = false): BoardTab {
+  if (raw === 'MINE') return loggedIn ? 'MINE' : 'OPEN';
   return QUESTION_TABS.some((tab) => tab.status === raw) ? (raw as QuestionStatus) : 'OPEN';
+}
+
+/** 화면에 띄울 탭. "내 질문"은 로그인한 사람에게만. */
+export function visibleTabs(loggedIn: boolean) {
+  return QUESTION_TABS.filter((tab) => loggedIn || tab.status !== 'MINE');
+}
+
+/** 탭별로 부를 목록 주소. "내 질문"은 상태를 섞어 한 번에 받는다. */
+export function boardUrl(tab: BoardTab): string {
+  return tab === 'MINE' ? '/api/questions?mine=1' : `/api/questions?status=${tab}`;
+}
+
+/**
+ * "내 질문" 카드 위에 붙일 상태 글자. 상태가 섞여 있어서 지금 어디까지 왔는지 알려 준다.
+ * 할 일로 정리된 질문은 카드가 이미 "할 일로 정리됨"을 붙이므로 여기서는 null.
+ */
+export function mineStateLabel(status: QuestionStatus): string | null {
+  if (status === 'OPEN') return '답을 기다려요';
+  if (status === 'ANSWERED') return '답이 달렸어요';
+  return null;
 }
 
 /**

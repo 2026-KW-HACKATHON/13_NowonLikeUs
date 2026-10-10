@@ -138,6 +138,15 @@ export function boardWhere(status: QuestionStatus | null) {
 }
 
 /**
+ * "내 질문" 목록 조건. 이웃의 질문 목록에 올라간 질문 중 내가 로그인해서 쓴 것만, 상태는 섞어서.
+ * 확인된 정보로 바로 답한 질문은 이웃이 답할 일이 없어 목록과 똑같이 뺀다.
+ * 비로그인으로 쓴 질문은 askerId 가 없어 누구 것인지 알 수 없으므로 여기 나오지 않는다.
+ */
+export function mineWhere(viewerId: string) {
+  return { ...boardWhere(null), askerId: viewerId };
+}
+
+/**
  * 이 사람이 질문을 이웃에게 넘길 수 있는가. 로그인해서 쓴 질문은 그 사람만,
  * 비로그인으로 쓴 질문은 질문 id 를 아는 사람(결과 화면을 본 질문자)만 넘길 수 있다.
  * GROUNDED 질문 id 는 목록에 나오지 않아 질문자 말고는 모른다.

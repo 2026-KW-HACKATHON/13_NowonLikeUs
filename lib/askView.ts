@@ -69,3 +69,13 @@ export function askProfile(profile: Profile): AskProfile {
 export function sendsQuestionsToGoogle(env: { GEMINI_ALLOW_USER_INPUT?: string; GEMINI_API_KEY?: string }): boolean {
   return env.GEMINI_ALLOW_USER_INPUT === 'true' && Boolean(env.GEMINI_API_KEY?.trim());
 }
+
+/**
+ * '이웃의 질문'에 올라간 내 질문을 다시 보러 가는 길.
+ * 로그인해서 쓴 질문은 "내 질문" 탭에 모이므로 그쪽으로, 아니면 답을 기다리는 질문 탭의 그 자리로.
+ */
+export function onBoardLink(questionId: string, loggedIn: boolean): { href: string; label: string } {
+  return loggedIn
+    ? { href: `/questions?status=MINE#q-${questionId}`, label: '내 질문에서 보기' }
+    : { href: `/questions?status=OPEN#q-${questionId}`, label: '이웃의 질문에서 보기' };
+}

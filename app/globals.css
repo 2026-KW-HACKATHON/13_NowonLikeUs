@@ -1229,6 +1229,21 @@ button:disabled {
   color: var(--accent);
 }
 
+/*
+ * "내 질문" 탭의 진행 상태. 답이 달린 질문이 먼저 눈에 들어오게 굵은 선 · 진한 글자로,
+ * 기다리는 질문은 점선 · 옅은 글자로 — 색이 아니라 선 모양과 명도로 구분한다.
+ */
+.qcard__state--mine {
+  border: 1.5px solid var(--text);
+  color: var(--text);
+}
+
+.qcard__state--mine[data-status="OPEN"] {
+  border-style: dashed;
+  border-color: var(--text-soft);
+  color: var(--text-soft);
+}
+
 .qcard__text {
   margin: 0 0 var(--space-1);
   font-size: 20px;
@@ -1360,6 +1375,19 @@ button:disabled {
 }
 
 .ask-next a {
+  font-weight: 700;
+}
+
+/* 비로그인일 때 질문하기 위의 안내. 결과 안내(.ask-next)와 같은 결이되, 질문 전이라 한 단계 약하게 테두리만. */
+.ask-login {
+  margin: 0 0 var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1.5px solid var(--rule-soft);
+  border-left: 5px solid var(--accent);
+  font-size: 16px;
+}
+
+.ask-login a {
   font-weight: 700;
 }
 
