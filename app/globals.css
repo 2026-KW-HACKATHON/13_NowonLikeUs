@@ -357,18 +357,90 @@ a {
  * 카드 안에는 제목 · 기한 · 이유만 둔다.
  */
 .task-row {
-  display: block;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--space-1);
   margin-bottom: 10px;
-  padding: var(--space-2) var(--space-3);
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
   border: 1px solid var(--rule-soft);
   border-radius: 16px;
   background: var(--surface);
-  text-decoration: none;
   transition: background 150ms ease;
 }
 
 .task-row:hover {
   background: var(--cat-soft);
+}
+
+/* 카드의 나머지 전체가 상세로 가는 링크. 위아래 여백까지 눌리게 링크 쪽에 패딩을 준다. */
+.task-row__link {
+  display: block;
+  padding: var(--space-1) 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* 완료 체크. 44px 누를 자리 안에 동그라미 하나. 누르면 "끝낸 일"로 내려간다. */
+.task-row__check {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  height: 44px;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.task-row__check svg {
+  width: 30px;
+  height: 30px;
+  padding: 4px;
+  border: 2px solid var(--border-control);
+  border-radius: 999px;
+  fill: none;
+  stroke: transparent;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.task-row__check:hover svg {
+  border-color: var(--accent);
+  stroke: var(--border-control);
+}
+
+.task-row__check[aria-pressed="true"] svg {
+  border-color: var(--accent);
+  background: var(--accent);
+  stroke: var(--on-accent);
+}
+
+.task-row__error {
+  grid-column: 1 / -1;
+  margin: var(--space-1) 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+/* 기한 없는 "알아 두기"는 한 단계 낮춘다. 제목 조금 작게, 이유는 한 줄만(전문은 상세에). */
+.task-row--quiet .task-row__title {
+  font-size: 18px;
+}
+
+.task-row--quiet .task-row__why {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  font-size: 15px;
 }
 
 .task-row__top {
