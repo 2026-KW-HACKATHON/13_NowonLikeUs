@@ -1,7 +1,7 @@
 /*
  * 「월계는 처음이라」 화면 기준.
  *
- * 스타일: 공공 에디토리얼 — 굵은 구분선, 큰 숫자, 카테고리 색띠.
+ * 스타일: 둥근 카드와 연한 분류색 — 표지와 안쪽 화면이 같은 표면을 쓴다. 큰 숫자로 기한을 세운다.
  * 배리어프리 트랙이므로 본문 18px, 터치 타깃 48px 이상, 대비는 WCAG AAA(7:1)로 맞춘다.
  *
  * 색은 전부 계산해서 골랐다. 눈대중으로 정하지 않는다.
@@ -9,7 +9,7 @@
  * 입력 요소 테두리는 본문이 아니라 UI 경계라서 기준이 3:1 이다(WCAG 1.4.11).
  * --rule-soft(면 구분, 1.4:1)로는 모자라므로 --border-control 을 따로 둔다.
  *
- * 카테고리를 색으로만 구분하지 않는다. 색띠 옆에 항상 "행정" 같은 글자가 같이 붙는다.
+ * 카테고리를 색으로만 구분하지 않는다. 분류 칩에는 항상 아이콘과 "행정" 같은 글자가 같이 붙는다.
  */
 
 :root {
@@ -647,7 +647,8 @@ a {
 .warn {
   margin: var(--space-3) 0 0;
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--danger);
+  border: 1.5px solid var(--danger);
+  border-radius: 14px;
   background: var(--danger-soft);
   color: var(--danger);
   font-weight: 700;
@@ -925,7 +926,7 @@ button:active {
 .next-helper {
   margin: 0 0 var(--space-6);
   padding: var(--space-4);
-  border-left: 8px solid var(--accent);
+  border-radius: 20px;
   background: var(--accent-soft);
 }
 
@@ -1024,7 +1025,8 @@ button:active {
 .ask-notice {
   margin: var(--space-3) 0 var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--border-control);
+  border: 1px solid var(--rule-soft);
+  border-radius: 14px;
   background: var(--surface);
   font-size: 15px;
   color: var(--text-soft);
@@ -1063,17 +1065,18 @@ button:disabled {
 .answer {
   margin: 0;
   padding: var(--space-3);
-  border-left: 8px solid var(--border-control);
+  border: 1.5px solid var(--border-control);
+  border-radius: 16px;
   background: var(--surface);
 }
 
 .answer--grounded {
-  border-left-color: var(--accent);
+  border-color: var(--accent);
   background: var(--accent-soft);
 }
 
 .answer--partial {
-  border-left-color: var(--conf-partial);
+  border-color: var(--conf-partial);
   background: var(--conf-partial-soft);
 }
 
@@ -1443,7 +1446,7 @@ button:disabled {
   font-weight: 700;
 }
 
-/* 주민 답변은 확인 전 정보라 할 일 카드(색띠)와 다르게 보여야 한다. 회색 세로줄로 "인용"처럼. */
+/* 주민 답변은 확인 전 정보라 할 일 카드와 다르게 보여야 한다. 한쪽 모서리가 각진 말풍선으로 "누가 한 말"처럼. */
 .answers {
   margin: var(--space-2) 0 var(--space-3);
 }
@@ -1468,7 +1471,8 @@ button:disabled {
 .answer-row {
   margin-bottom: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border-left: 4px solid var(--border-control);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px 16px 16px 16px;
   background: var(--surface);
 }
 
@@ -1540,7 +1544,7 @@ button:disabled {
 .ask-next {
   margin: var(--space-3) 0 0;
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--accent);
+  border-radius: 14px;
   background: var(--accent-soft);
   font-size: 16px;
 }
@@ -1554,7 +1558,8 @@ button:disabled {
   margin: 0 0 var(--space-3);
   padding: var(--space-2) var(--space-3);
   border: 1.5px solid var(--rule-soft);
-  border-left: 5px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
   font-size: 16px;
 }
 
@@ -1651,13 +1656,12 @@ button:disabled {
 .nverify__msg {
   margin: 0;
   padding: var(--space-1) var(--space-2);
-  border-left: 4px solid var(--conf-partial);
+  border-radius: 12px;
   background: var(--conf-partial-soft);
   font-size: 15px;
 }
 
 .nverify__msg--ok {
-  border-left-color: var(--accent);
   background: var(--accent-soft);
 }
 
@@ -1677,7 +1681,7 @@ button:disabled {
 .publish-notice {
   margin-bottom: var(--space-4);
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--accent);
+  border-radius: 14px;
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 700;
@@ -1739,14 +1743,15 @@ button:disabled {
 .editor__origin {
   margin: 0 0 var(--space-4);
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--border-control);
+  border: 1px solid var(--rule-soft);
+  border-radius: 14px;
   background: var(--surface);
   font-size: 15px;
 }
 
 /* AI 초안은 노랑(일부만 확인됨 색)으로 — 아직 확인 전이라는 뜻을 색과 문장 둘 다로. */
 .editor__origin--ai {
-  border-left-color: var(--conf-partial);
+  border-color: var(--conf-partial);
   background: var(--conf-partial-soft);
   color: var(--conf-partial);
   font-weight: 700;
@@ -1836,7 +1841,7 @@ button:disabled {
 .qboard__notice {
   margin: 0 0 var(--space-3);
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--accent);
+  border-radius: 14px;
   background: var(--accent-soft);
   font-weight: 700;
 }
@@ -1876,7 +1881,8 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-1);
-  border-left-style: dashed;
+  border-style: dashed;
+  border-color: var(--border-control);
 }
 
 .answer-row__hidden {
