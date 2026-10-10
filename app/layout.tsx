@@ -1,5 +1,6 @@
-import type { Metadata } from "next";
+import type { Metadata, Viewport } from "next";
 import { Noto_Sans_KR } from "next/font/google";
+import TabBar from "@/components/TabBar";
 import "./globals.css";
 
 /*
@@ -18,10 +19,23 @@ export const metadata: Metadata = {
   description: "월계1동에 처음 온 사람을 위한 상황별 생활 안내",
 };
 
+/*
+ * viewportFit: cover 여야 아이폰에서 env(safe-area-inset-bottom) 값이 잡힌다.
+ * 하단 탭이 홈 막대에 깔리지 않게 그만큼 띄우는 데 쓴다. 확대는 막지 않는다.
+ */
+export const viewport: Viewport = {
+  width: "device-width",
+  initialScale: 1,
+  viewportFit: "cover",
+};
+
 export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html lang="ko" className={sans.variable}>
-      <body>{children}</body>
+      <body>
+        {children}
+        <TabBar />
+      </body>
     </html>
   );
 }

@@ -152,8 +152,8 @@ body {
 
 /*
  * 스크린리더만 읽는 텍스트. 화면에서는 안 보이지만 DOM 에는 있다.
- * 건너뛰기 링크(skip link)는 아직 안 넣었다. 본문 위에 반복되는 내비게이션이
- * 없어서 건너뛸 대상이 없다. 상단 내비게이션이 생기면 그때 같이 넣는다.
+ * 건너뛰기 링크(skip link)는 넣지 않았다. 반복되는 하단 탭은 DOM 상 본문 뒤에 있어서
+ * 본문보다 먼저 지나칠 일이 없다. 상단 내비게이션이 생기면 그때 같이 넣는다.
  */
 .sr-only {
   position: absolute;
@@ -691,6 +691,88 @@ button:active {
   display: inline-flex;
   align-items: center;
   min-height: 44px;
+}
+
+/* ---------- 하단 탭 ---------- */
+
+/*
+ * 할 일 · 물어보기 · 이웃 질문을 오가는 탭. 화면 아래에 고정한다 (components/TabBar.tsx).
+ * 위쪽 굵은 선은 제호 아래 기준선과 같은 굵기다. 지금 화면은 글자색과 위쪽 막대 두 가지로
+ * 알린다 — 색만으로 구분하지 않는다.
+ */
+.tabbar {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 10;
+  background: var(--surface);
+  border-top: 2px solid var(--rule);
+  padding-bottom: env(safe-area-inset-bottom);
+}
+
+.tabbar__list {
+  max-width: 640px;
+  margin: 0 auto;
+  padding: 0;
+  list-style: none;
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+.tabbar__item {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 2px;
+  min-height: 64px;
+  color: var(--text-soft);
+  text-decoration: none;
+  font-size: 15px;
+  font-weight: 700;
+  line-height: 1.2;
+}
+
+.tabbar__item[aria-current="page"] {
+  color: var(--accent);
+}
+
+.tabbar__item[aria-current="page"]::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 22%;
+  right: 22%;
+  height: 4px;
+  background: var(--accent);
+}
+
+.tabbar__icon {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
+.tabbar__item:focus-visible {
+  outline-offset: -4px;
+}
+
+/* 탭 높이(64px) + 선(2px) + 아이폰 홈 막대만큼. 마지막 카드가 탭 밑에 깔리지 않게 한다. */
+.tabbar-spacer {
+  height: calc(66px + env(safe-area-inset-bottom));
+}
+
+@media print {
+  .tabbar,
+  .tabbar-spacer {
+    display: none;
+  }
 }
 
 /* ---------- 진행률 · 완료 ---------- */
