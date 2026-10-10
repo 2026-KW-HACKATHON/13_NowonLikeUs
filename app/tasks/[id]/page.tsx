@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import CategoryIcon from '@/components/CategoryIcon';
 import Masthead from '@/components/Masthead';
 import { CATEGORY_LABEL, asOfLabel, dueLabel } from '@/lib/labels';
 import { loadProfile } from '@/lib/profile';
@@ -114,7 +115,10 @@ export default function TaskDetailPage() {
 
       <div className="detail-head" data-category={task.category}>
         <div className="detail-head__top">
-          <span className="detail-head__cat">{CATEGORY_LABEL[task.category]}</span>
+          <span className="cat-chip">
+            <CategoryIcon category={task.category} />
+            {CATEGORY_LABEL[task.category]}
+          </span>
           <span className={`detail-head__due ${due.tone}`}>{due.text}</span>
         </div>
         <h1>{task.title}</h1>
@@ -166,7 +170,7 @@ export default function TaskDetailPage() {
       )}
 
       {task.linkUrl && (
-        <section className="detail-section">
+        <section className="detail-section detail-section--plain">
           <h2>온라인으로</h2>
           <a className="button-link" href={task.linkUrl} target="_blank" rel="noopener noreferrer">
             신청 페이지 열기
@@ -175,7 +179,7 @@ export default function TaskDetailPage() {
         </section>
       )}
 
-      <section className="detail-section">
+      <section className="detail-section detail-section--plain">
         <button
           type="button"
           className={`done-toggle${done ? ' on' : ''}`}
