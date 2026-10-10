@@ -20,7 +20,10 @@ const question = {
   status: 'ANSWERED',
   ctxHousingType: 'ONE_ROOM',
   ctxContractType: 'MONTHLY',
-  answers: [{ text: '전용 수거용기에 담아 집 앞에 내놓으면 돼요.' }],
+  answers: [{
+    text: '음식물쓰레기 버리는 방법 알아두기. 아무 데나 버리면 수거되지 않습니다. ' +
+      '전용 수거용기에 담아 집 앞에 내놓습니다.',
+  }],
 };
 const generated = {
   title: '음식물쓰레기 버리는 방법 알아두기',
@@ -89,6 +92,8 @@ describe('POST /api/admin/promote/draft', () => {
       askerHousingType: 'ONE_ROOM',
       askerContractType: 'MONTHLY',
     });
+    const systemText = JSON.parse(fetchMock.mock.calls[0][1]?.body as string).systemInstruction.parts[0].text;
+    expect(systemText).toContain('답변에서 완전한 한 문장을 글자 그대로');
   });
 
   it('AI 호출이 실패하면 draft: null 로 빈 양식에 넘긴다', async () => {

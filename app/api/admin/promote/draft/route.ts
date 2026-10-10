@@ -19,7 +19,7 @@ function noDraft() {
  *
  * AI 를 못 쓰면(스위치 꺼짐 · 키 없음 · 호출 실패 · 형식 오류) 200 과 `draft: null` 로 답한다.
  * 화면은 빈 양식을 띄우고 운영자가 직접 쓴다 — 승격이 AI 에 막히면 안 된다.
- * 초안의 값은 원문과 대조해 확인되지 않는 숫자 · 주소 · 링크를 비운 뒤 내려보낸다(lib/promotionDraft.ts).
+ * 문장 칸은 주민 답변의 완전한 원문 문장만 허용하고, 확인되지 않는 기한 · 주소 · 링크는 비운다(lib/promotionDraft.ts).
  */
 export async function POST(request: Request) {
   const admin = await requireAdmin();
