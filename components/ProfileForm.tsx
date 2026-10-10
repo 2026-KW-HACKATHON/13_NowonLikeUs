@@ -29,8 +29,10 @@ export default function ProfileForm({
   initial?: Profile | null;
   onSubmit: (profile: Profile) => void;
 }) {
-  const [housingType, setHousingType] = useState<HousingType>(initial?.housingType ?? 'ONE_ROOM');
-  const [contractType, setContractType] = useState<ContractType>(initial?.contractType ?? 'MONTHLY');
+  // 집 · 계약 형태는 처음에 아무것도 고르지 않은 상태로 둔다. 미리 골라 두면 기숙사생이 날짜만 넣고
+  // 넘어가도 원룸 · 월세 목록을 받는다. 결과가 이 두 값으로 갈리므로 꼭 직접 고르게 한다.
+  const [housingType, setHousingType] = useState<HousingType | null>(initial?.housingType ?? null);
+  const [contractType, setContractType] = useState<ContractType | null>(initial?.contractType ?? null);
   const [moveInDate, setMoveInDate] = useState(initial?.moveInDate ?? '');
   const [hasCar, setHasCar] = useState(initial?.hasCar ?? false);
   const [hasPet, setHasPet] = useState(initial?.hasPet ?? false);
@@ -38,7 +40,7 @@ export default function ProfileForm({
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!moveInDate) return;
+    if (!housingType || !contractType || !moveInDate) return;
     onSubmit({ zone: ZONE, housingType, contractType, moveInDate, hasCar, hasPet, isStudent });
   }
 
@@ -49,11 +51,13 @@ export default function ProfileForm({
         <div className="choices">
           {HOUSING.map((option) => (
             <label key={option.value} className="choice">
+              {/* 같은 name 의 라디오 하나에만 required 가 있어도 묶음 전체가 필수가 된다. 날짜 칸과 같은 브라우저 안내가 뜬다. */}
               <input
                 type="radio"
                 name="housingType"
                 checked={housingType === option.value}
                 onChange={() => setHousingType(option.value)}
+                required
               />
               {option.label}
             </label>
@@ -71,6 +75,7 @@ export default function ProfileForm({
                 name="contractType"
                 checked={contractType === option.value}
                 onChange={() => setContractType(option.value)}
+                required
               />
               {option.label}
             </label>
