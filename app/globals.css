@@ -1112,6 +1112,63 @@ button:disabled {
   font-weight: 700;
 }
 
+/* ---------- 카카오 로그인 (components/KakaoLogin.tsx) ---------- */
+
+/*
+ * 카카오 디자인 가이드 그대로 — 노란 바탕, 검정 말풍선, 85% 검정 글자. 브랜드 색이라 어두운 모드에서도 바꾸지 않는다.
+ * 주 버튼(button)과 같은 높이 · 모서리라 두 길이 같은 무게로 보인다.
+ */
+.kakao-button {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-2);
+  min-height: 56px;
+  border-radius: var(--radius);
+  background: #fee500;
+  color: rgba(0, 0, 0, 0.85);
+  font-weight: 700;
+  text-decoration: none;
+  transition: filter 150ms ease;
+}
+
+.kakao-button:hover {
+  filter: brightness(0.96);
+}
+
+.kakao-button__symbol {
+  width: 22px;
+  height: 22px;
+  fill: #000000;
+}
+
+.kakao-note {
+  margin: var(--space-1) 0 0;
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.kakao-error {
+  margin: 0 0 var(--space-3);
+}
+
+/* "또는 이메일로" — 카카오와 이메일 양식 사이 가는 선 */
+.auth-divider {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  margin: var(--space-4) 0;
+  color: var(--text-soft);
+  font-size: 15px;
+}
+
+.auth-divider::before,
+.auth-divider::after {
+  content: "";
+  flex: 1;
+  border-top: 1px solid var(--rule-soft);
+}
+
 /* ---------- 로그인 상태 (제호 오른쪽) ---------- */
 
 /* 확인 전에도 자리를 잡아 둬서, 닉네임이 들어올 때 제호가 흔들리지 않게 한다. */

@@ -210,6 +210,20 @@ export interface AuthResponse {
 }
 
 /**
+ * POST /api/auth/kakao/complete 요청. 카카오로 처음 로그인한 사람이 이 서비스에서 쓸 닉네임.
+ * 카카오 회원번호는 본문에 싣지 않는다 — 서버가 콜백에서 서명해 둔 쿠키에서만 읽는다.
+ */
+export interface KakaoSignupRequest {
+  nickname: string;
+}
+
+/** POST /api/auth/kakao/complete 응답. `next` 는 카카오 로그인을 시작한 화면(서버가 검사한 사이트 안 경로). */
+export interface KakaoSignupResponse {
+  user: SessionUser;
+  next: string;
+}
+
+/**
  * GET /api/auth/me 응답.
  *
  * 로그인하지 않았으면 401 이 아니라 200 + `user: null` 이다.
