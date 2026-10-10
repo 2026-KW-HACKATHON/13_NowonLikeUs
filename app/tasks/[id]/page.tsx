@@ -155,17 +155,16 @@ export default function TaskDetailPage() {
                 <dd>{task.placeAddress}</dd>
               </div>
             )}
-            {task.placePhone && (
-              <div>
-                <dt>전화</dt>
-                <dd>
-                  <a className="tel" href={telHref(task.placePhone)}>
-                    {task.placePhone}
-                  </a>
-                </dd>
-              </div>
-            )}
           </dl>
+          {/* 전화 걸기는 이 화면의 핵심 동작이라 카드 폭 전체를 쓰는 버튼으로 둔다. 번호 글자는 DB 원문 그대로. */}
+          {task.placePhone && (
+            <a className="tel" href={telHref(task.placePhone)}>
+              <svg className="tel__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
+              </svg>
+              {task.placePhone} 전화 걸기
+            </a>
+          )}
         </section>
       )}
 

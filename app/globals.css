@@ -611,13 +611,37 @@ a {
 }
 
 /* 전화는 링크로 둔다. 번호를 옮겨 적다가 틀리는 걸 막는다. */
-/* 전화 걸기는 이 화면의 핵심 동작이다. 글자 높이만큼만 눌리면 손가락으로 맞히기 어렵다. */
+/* 전화 걸기는 이 화면의 핵심 동작이다. 카드 폭 전체를 쓰는 연한 초록 버튼으로 둬서 손가락으로 쉽게 누른다. */
 .tel {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  min-height: 44px;
-  font-weight: 700;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 52px;
+  margin-top: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: 12px;
+  background: var(--accent-soft);
   color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  transition: filter 150ms ease;
+}
+
+.tel:hover {
+  filter: brightness(0.96);
+}
+
+.tel__icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* 외부로 나가는 버튼. button 과 똑같이 보이되 a 태그다. */
