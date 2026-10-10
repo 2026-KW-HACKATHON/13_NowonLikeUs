@@ -31,7 +31,7 @@ export type KakaoLoginError = 'cancelled' | 'failed' | 'unavailable';
 
 /**
  * 카카오 앱 키. REST API 키가 없으면 카카오 로그인을 끈다(버튼도 숨긴다).
- * client_secret 은 콘솔에서 "Client Secret" 을 켰을 때만 넣는다.
+ * client_secret 은 콘솔 > 앱 > 플랫폼 키 > REST API 키 > 클라이언트 시크릿. 새 키는 기본으로 켜져 있다.
  */
 export function kakaoConfig(env: Record<string, string | undefined>): { clientId: string; clientSecret?: string } | null {
   const clientId = env.KAKAO_REST_API_KEY?.trim();
@@ -55,7 +55,7 @@ export function kakaoAuthorizeUrl({ clientId, redirectUri, state }: { clientId: 
   return url.toString();
 }
 
-/** 토큰 요청 본문. client_secret 은 콘솔에서 켰을 때만 보낸다. */
+/** 토큰 요청 본문. client_secret 은 설정돼 있을 때만 보낸다(콘솔에서 켜 두면 필수). */
 export function kakaoTokenBody({
   clientId,
   clientSecret,
