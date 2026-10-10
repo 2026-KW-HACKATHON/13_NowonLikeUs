@@ -85,10 +85,6 @@ export default function AskScreen({ sendsToGoogle }: { sendsToGoogle: boolean })
     <main>
       <Masthead profile={profile} />
 
-      <Link href="/tasks" className="back">
-        ← 내 할 일
-      </Link>
-
       <h1 className="page-title">무엇이 궁금한가요?</h1>
       <p className="lead">월계1동에서 확인된 정보로만 답합니다. 모르는 건 모른다고 답합니다.</p>
 

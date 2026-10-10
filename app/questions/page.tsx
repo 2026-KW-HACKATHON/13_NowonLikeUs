@@ -19,9 +19,6 @@ export default async function QuestionsPage({ searchParams }: PageProps<'/questi
     <main>
       {/* 상황 정보는 이 화면에서 쓰지 않는다. 질문은 상황과 상관없이 모두에게 보인다. */}
       <Masthead profile={null} />
-      <Link href="/tasks" className="back">
-        ← 내 할 일
-      </Link>
 
       <h1 className="page-title">이웃의 질문</h1>
       <p className="lead">
