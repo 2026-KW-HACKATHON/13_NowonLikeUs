@@ -784,6 +784,19 @@ button:active {
   margin-top: var(--space-2);
 }
 
+/* 질문하기 고지(목록). 줄머리 점 자리만큼 왼쪽을 더 띄운다. 답변 쓰기 칸의 고지는 한 문단이라 그대로. */
+ul.ask-notice {
+  padding-left: calc(var(--space-3) + 18px);
+}
+
+/* 고지를 짧은 줄로 나눈 목록. 줄머리 점으로 한 줄씩 끊어 읽히게 한다. */
+.note-list {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 0;
+  padding-left: 20px;
+}
+
 /* ---------- 상태 ---------- */
 
 .empty {
@@ -1023,6 +1036,8 @@ button:active {
 
 /* 제출 버튼 바로 위에 둔다. 누르기 직전에 읽히는 자리여야 고지가 고지 노릇을 한다. */
 .ask-notice {
+  display: grid;
+  gap: 4px;
   margin: var(--space-3) 0 var(--space-2);
   padding: var(--space-2) var(--space-3);
   border: 1px solid var(--rule-soft);
