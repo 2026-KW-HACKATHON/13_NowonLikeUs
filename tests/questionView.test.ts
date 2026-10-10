@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   boardWhere,
   canAskNeighbors,
+  mineWhere,
   parseStatusFilter,
   toAnswerItem,
   toQuestionItem,
@@ -117,6 +118,15 @@ describe('boardWhere', () => {
     expect(boardWhere('OPEN')).toEqual({
       OR: [{ confidence: { not: 'GROUNDED' } }, { askNeighbors: true }],
       status: 'OPEN',
+    });
+  });
+});
+
+describe('mineWhere', () => {
+  it('이웃의 질문 목록 조건에 내 id 만 더한다 — 상태는 거르지 않는다', () => {
+    expect(mineWhere('u1')).toEqual({
+      OR: [{ confidence: { not: 'GROUNDED' } }, { askNeighbors: true }],
+      askerId: 'u1',
     });
   });
 });
