@@ -5,11 +5,40 @@ import {
   PASSWORD_MAX_BYTES,
   PASSWORD_MIN,
   normalizeEmail,
+  validateKakaoSignup,
   validateLogin,
+  validateNickname,
   validateSignup,
 } from '@/lib/authValidation';
 
 const ok = { email: 'student@example.com', password: 'abcd1234', nickname: '월계주민' };
+
+describe('validateNickname', () => {
+  it('앞뒤 공백을 지운 값을 돌려준다', () => {
+    expect(validateNickname('  월계주민 ')).toEqual({ ok: true, value: '월계주민' });
+  });
+
+  it('길이가 안 맞으면 거절', () => {
+    expect(validateNickname('가'.repeat(NICKNAME_MIN - 1)).ok).toBe(false);
+    expect(validateNickname('가'.repeat(NICKNAME_MAX + 1)).ok).toBe(false);
+  });
+});
+
+describe('validateKakaoSignup', () => {
+  it('닉네임만 받는다 — 본문에 실린 회원번호 · role 은 결과에 담지 않는다', () => {
+    expect(validateKakaoSignup({ nickname: ' 이웃 ', kakaoId: '999', role: 'ADMIN' })).toEqual({ ok: true, value: { nickname: '이웃' } });
+  });
+
+  it.each([null, 'x', {}, { nickname: 3 }])('모양이 다르면 요청 형식 오류: %j', (input) => {
+    expect(validateKakaoSignup(input)).toEqual({ ok: false, error: '요청 형식이 올바르지 않습니다.' });
+  });
+
+  it('길이가 안 맞으면 닉네임 규칙 문장', () => {
+    const result = validateKakaoSignup({ nickname: '가' });
+    expect(result.ok).toBe(false);
+    if (!result.ok) expect(result.error).toContain('닉네임은');
+  });
+});
 
 describe('normalizeEmail', () => {
   it('앞뒤 공백을 지우고 소문자로 맞춘다', () => {

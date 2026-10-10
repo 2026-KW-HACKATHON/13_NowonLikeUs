@@ -79,10 +79,14 @@ model Task {
   updatedAt DateTime @updatedAt
 }
 
+/// 로그인 방법은 둘 중 하나다 — 이메일 + 비밀번호, 또는 카카오.
+/// 카카오 계정은 email · passwordHash 가 비고 kakaoId 만 있다. 이메일 계정은 kakaoId 가 빈다.
 model User {
   id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
+  email        String?  @unique
+  passwordHash String?
+  /// 카카오 회원번호. 카카오에서 받는 정보는 이것뿐이다(닉네임 · 이메일 · 전화번호는 받지 않는다).
+  kakaoId      String?  @unique
   nickname     String
   role         UserRole @default(MEMBER)
   createdAt    DateTime @default(now())

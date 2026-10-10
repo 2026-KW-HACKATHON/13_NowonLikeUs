@@ -41,6 +41,22 @@ export function safeNext(raw: string | string[] | undefined): string {
   return raw;
 }
 
+/**
+ * 카카오 로그인에서 돌아온 `?kakao=` 사유를 로그인 화면 문장으로. 모르는 값이면 null(아무것도 안 띄움).
+ * 카카오가 준 오류 내용은 화면에 싣지 않는다 — 사유는 서버가 정한 세 가지뿐이다.
+ */
+export function kakaoErrorMessage(raw: string | string[] | undefined): string | null {
+  if (raw === 'cancelled') return '카카오 로그인을 취소했습니다.';
+  if (raw === 'failed') return '카카오 로그인에 실패했습니다. 잠시 후 다시 시도해 주세요.';
+  if (raw === 'unavailable') return '지금은 카카오 로그인을 쓸 수 없습니다. 이메일로 로그인해 주세요.';
+  return null;
+}
+
+/** 카카오 로그인 시작 주소. 로그인 뒤 돌아갈 화면을 함께 넘긴다(서버가 다시 검사한다). */
+export function kakaoStartHref(next: string): string {
+  return `/api/auth/kakao?next=${encodeURIComponent(next)}`;
+}
+
 export type FieldErrors = Partial<Record<'email' | 'password' | 'nickname', string>>;
 
 /** 글자 수. 서버(`authValidation`)와 같이 이모지 · 한글 한 글자를 1로 센다. */
@@ -63,7 +79,7 @@ export function loginFieldErrors(input: { email: string; password: string }): Fi
 /** 가입 칸 검사. 이메일 형식은 서버가 판정한다 (규칙을 두 곳에 두면 한쪽만 바뀐다). */
 export function signupFieldErrors(input: { email: string; password: string; nickname: string }): FieldErrors {
   const errors: FieldErrors = {};
-  const { passwordMin, passwordMaxBytes, nicknameMin, nicknameMax, emailMax } = AUTH_LIMITS;
+  const { passwordMin, passwordMaxBytes, emailMax } = AUTH_LIMITS;
 
   const email = input.email.trim();
   if (!email) errors.email = '이메일을 입력해 주세요.';
@@ -77,13 +93,21 @@ export function signupFieldErrors(input: { email: string; password: string; nick
     errors.password = `비밀번호가 너무 깁니다. 영문 ${passwordMaxBytes}자, 한글 ${Math.floor(passwordMaxBytes / 3)}자까지 쓸 수 있습니다.`;
   }
 
-  const nickname = input.nickname.trim();
-  if (!nickname) errors.nickname = '닉네임을 입력해 주세요.';
-  else if (charCount(nickname) < nicknameMin || charCount(nickname) > nicknameMax) {
-    errors.nickname = `닉네임은 ${nicknameMin}~${nicknameMax}자로 정해 주세요.`;
-  }
+  const nicknameError = nicknameFieldError(input.nickname);
+  if (nicknameError) errors.nickname = nicknameError;
 
   return errors;
+}
+
+/** 닉네임 칸 검사. 이메일 가입과 카카오 첫 로그인의 닉네임 정하기가 같이 쓴다. 문제없으면 null. */
+export function nicknameFieldError(raw: string): string | null {
+  const { nicknameMin, nicknameMax } = AUTH_LIMITS;
+  const nickname = raw.trim();
+  if (!nickname) return '닉네임을 입력해 주세요.';
+  if (charCount(nickname) < nicknameMin || charCount(nickname) > nicknameMax) {
+    return `닉네임은 ${nicknameMin}~${nicknameMax}자로 정해 주세요.`;
+  }
+  return null;
 }
 
 /** 서버 오류 본문(`{ error: string }`)의 문장을 꺼낸다. 없으면 `fallback`. */

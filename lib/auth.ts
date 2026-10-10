@@ -2,6 +2,13 @@ import 'server-only';
 
 import { cookies } from 'next/headers';
 import { prisma } from './db';
+import {
+  KAKAO_COOKIE_MAX_AGE_SECONDS,
+  KAKAO_PENDING_COOKIE,
+  KAKAO_STATE_COOKIE,
+  signKakaoPending,
+  verifyKakaoPending,
+} from './kakao';
 import { SESSION_MAX_AGE_SECONDS, signSession, verifySession } from './session';
 import type { ApiErrorResponse, SessionUser } from './types';
 
@@ -51,6 +58,42 @@ export async function clearSessionCookie(): Promise<void> {
     path: '/',
     maxAge: 0,
   });
+}
+
+/* ---------- 카카오 로그인 중간 쿠키 (lib/kakao.ts 흐름 참고) ---------- */
+
+/**
+ * 카카오로 오가는 동안만 쓰는 쿠키. 경로를 카카오 API · 닉네임 화면으로 좁힌다.
+ * SameSite=Lax 여야 카카오에서 돌아오는 첫 GET 에 쿠키가 실린다.
+ */
+function kakaoCookieOptions(path: string, maxAge: number) {
+  return { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'lax' as const, path, maxAge };
+}
+
+export async function setKakaoStateCookie(value: string): Promise<void> {
+  (await cookies()).set(KAKAO_STATE_COOKIE, value, kakaoCookieOptions('/api/auth/kakao', KAKAO_COOKIE_MAX_AGE_SECONDS));
+}
+
+/** state 쿠키를 읽고 바로 지운다. 한 번 쓴 state 는 다시 받지 않는다. */
+export async function takeKakaoStateCookie(): Promise<string | undefined> {
+  const store = await cookies();
+  const value = store.get(KAKAO_STATE_COOKIE)?.value;
+  store.set(KAKAO_STATE_COOKIE, '', kakaoCookieOptions('/api/auth/kakao', 0));
+  return value;
+}
+
+/** 처음 온 카카오 회원번호. 닉네임 화면(/signup/kakao)과 완료 API 둘 다 읽어야 해서 경로를 / 로 둔다. */
+export async function setKakaoPendingCookie(pending: { kakaoId: string; next: string }): Promise<void> {
+  const token = await signKakaoPending(pending, getSessionSecret());
+  (await cookies()).set(KAKAO_PENDING_COOKIE, token, kakaoCookieOptions('/', KAKAO_COOKIE_MAX_AGE_SECONDS));
+}
+
+export async function readKakaoPending(): Promise<{ kakaoId: string; next: string } | null> {
+  return verifyKakaoPending((await cookies()).get(KAKAO_PENDING_COOKIE)?.value, getSessionSecret());
+}
+
+export async function clearKakaoPendingCookie(): Promise<void> {
+  (await cookies()).set(KAKAO_PENDING_COOKIE, '', kakaoCookieOptions('/', 0));
 }
 
 /** 지금 로그인한 사용자. 로그인하지 않았거나 토큰이 잘못됐으면 null. */
