@@ -3,6 +3,7 @@
 import Image from 'next/image';
 import Link from 'next/link';
 import { useEffect, useState, type ReactNode } from 'react';
+import CategoryIcon from '@/components/CategoryIcon';
 import Masthead from '@/components/Masthead';
 import { CATEGORY_LABEL, CONTRACT_LABEL, HOUSING_LABEL } from '@/lib/labels';
 import { timeAgo } from '@/lib/questionBoard';
@@ -193,34 +194,4 @@ function PersonIcon() {
       <path d="M4 21c1.5-4 4.5-6 8-6s6.5 2 8 6" />
     </Icon>
   );
-}
-
-function CategoryIcon({ category }: { category: TaskCategory }) {
-  switch (category) {
-    case 'ADMIN':
-      return (
-        <Icon>
-          <rect x="5" y="3" width="14" height="18" rx="2" />
-          <path d="M9 8h6M9 12h6M9 16h3" />
-        </Icon>
-      );
-    case 'WASTE':
-      return (
-        <Icon>
-          <path d="M4 7h16M10 7V4h4v3M6 7l1 13h10l1-13M10 11v5M14 11v5" />
-        </Icon>
-      );
-    case 'HOUSING':
-      return (
-        <Icon>
-          <path d="M3 11l9-8 9 8M5 10v10h14V10M10 20v-6h4v6" />
-        </Icon>
-      );
-    case 'LIFE':
-      return (
-        <Icon>
-          <path d="M4 9h12v5a5 5 0 0 1-5 5H9a5 5 0 0 1-5-5zM16 11h1.5a2.5 2.5 0 0 1 0 5H16M8 3v3M12 3v3" />
-        </Icon>
-      );
-  }
 }
