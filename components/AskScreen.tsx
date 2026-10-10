@@ -5,8 +5,9 @@ import Link from 'next/link';
 import ConfidenceBadge from '@/components/ConfidenceBadge';
 import Masthead from '@/components/Masthead';
 import TaskCard from '@/components/TaskCard';
-import { ASK_MAX_LENGTH, askProfile, describeAnswer } from '@/lib/askView';
+import { ASK_MAX_LENGTH, askProfile, describeAnswer, onBoardLink } from '@/lib/askView';
 import { useProfile } from '@/lib/useProfile';
+import { useSession } from '@/lib/useSession';
 import type { AskRequest, AskResponse } from '@/lib/types';
 
 type Phase =
@@ -42,6 +43,7 @@ async function errorMessage(
  */
 export default function AskScreen({ sendsToGoogle }: { sendsToGoogle: boolean }) {
   const { hydrated, profile } = useProfile();
+  const session = useSession();
   const [text, setText] = useState('');
   const [phase, setPhase] = useState<Phase>({ kind: 'idle' });
   const [fieldError, setFieldError] = useState<string | null>(null);
@@ -85,12 +87,19 @@ export default function AskScreen({ sendsToGoogle }: { sendsToGoogle: boolean })
     <main>
       <Masthead profile={profile} />
 
-      <Link href="/tasks" className="back">
-        ← 내 할 일
-      </Link>
-
       <h1 className="page-title">무엇이 궁금한가요?</h1>
       <p className="lead">월계1동에서 확인된 정보로만 답합니다. 모르는 건 모른다고 답합니다.</p>
+
+      {/*
+        비로그인 질문은 누가 썼는지 남지 않아, 나중에 로그인해도 "내 질문"에 모이지 않는다.
+        쓰기 시작하기 전에 알려야 해서 입력칸 위에 둔다. 세션을 확인하기 전에는 띄우지 않는다(깜빡임 방지).
+      */}
+      {session.loaded && !session.user && (
+        <p className="ask-login">
+          로그인하고 질문하면 이웃이 단 답을 나중에 &lsquo;내 질문&rsquo;에서 바로 볼 수 있습니다.{' '}
+          <Link href={`/login?next=${encodeURIComponent('/ask')}`}>로그인하기</Link>
+        </p>
+      )}
 
       <form className="ask-form" onSubmit={handleSubmit} noValidate>
         <label className="ask-label" htmlFor="ask-text">
@@ -238,10 +247,12 @@ function AskResult({
 }
 
 function OnBoardNote({ questionId }: { questionId: string }) {
+  const session = useSession();
+  const link = onBoardLink(questionId, session.user !== null);
   return (
     <p className="ask-next">
       이 질문은 &lsquo;이웃의 질문&rsquo;에 올라갔습니다. 먼저 와 본 주민이 답하면 거기서 볼 수 있습니다.{' '}
-      <Link href={`/questions?status=OPEN#q-${questionId}`}>이웃의 질문에서 보기</Link>
+      <Link href={link.href}>{link.label}</Link>
     </p>
   );
 }

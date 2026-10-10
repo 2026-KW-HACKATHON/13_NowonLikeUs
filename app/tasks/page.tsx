@@ -152,9 +152,8 @@ export default function TasksPage() {
         </section>
       )}
 
+      {/* 질문하기 · 이웃의 질문은 하단 탭에 있다. 여기에는 탭에 없는 길만 남긴다. */}
       <nav className="nav">
-        <Link href="/ask">궁금한 게 있나요? 질문하기</Link>
-        <Link href="/questions">이웃의 질문에 답하기</Link>
         <Link href="/setup">상황 다시 입력하기</Link>
       </nav>
     </main>

@@ -59,13 +59,27 @@ export function validateSignup(input: unknown): ValidationResult<SignupRequest> 
     return { ok: false, error: '비밀번호가 너무 깁니다. 영문 72자, 한글 24자 이하로 입력해 주세요.' };
   }
 
-  const trimmedNickname = nickname.trim();
-  const nicknameLength = charCount(trimmedNickname);
-  if (nicknameLength < NICKNAME_MIN || nicknameLength > NICKNAME_MAX) {
+  const checkedNickname = validateNickname(nickname);
+  if (!checkedNickname.ok) return checkedNickname;
+
+  return { ok: true, value: { email: normalizedEmail, password, nickname: checkedNickname.value } };
+}
+
+/** 닉네임 검증. 이메일 가입과 카카오 가입이 같은 규칙을 쓴다. 통과하면 앞뒤 공백을 지운 값. */
+export function validateNickname(nickname: string): ValidationResult<string> {
+  const trimmed = nickname.trim();
+  const length = charCount(trimmed);
+  if (length < NICKNAME_MIN || length > NICKNAME_MAX) {
     return { ok: false, error: `닉네임은 ${NICKNAME_MIN}~${NICKNAME_MAX}자로 입력해 주세요.` };
   }
+  return { ok: true, value: trimmed };
+}
 
-  return { ok: true, value: { email: normalizedEmail, password, nickname: trimmedNickname } };
+/** 카카오 첫 로그인 뒤 닉네임 정하기 요청 검증. */
+export function validateKakaoSignup(input: unknown): ValidationResult<{ nickname: string }> {
+  if (!isRecord(input) || typeof input.nickname !== 'string') return { ok: false, error: BAD_REQUEST };
+  const checked = validateNickname(input.nickname);
+  return checked.ok ? { ok: true, value: { nickname: checked.value } } : checked;
 }
 
 /**

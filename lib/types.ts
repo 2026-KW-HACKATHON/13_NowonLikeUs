@@ -210,6 +210,20 @@ export interface AuthResponse {
 }
 
 /**
+ * POST /api/auth/kakao/complete 요청. 카카오로 처음 로그인한 사람이 이 서비스에서 쓸 닉네임.
+ * 카카오 회원번호는 본문에 싣지 않는다 — 서버가 콜백에서 서명해 둔 쿠키에서만 읽는다.
+ */
+export interface KakaoSignupRequest {
+  nickname: string;
+}
+
+/** POST /api/auth/kakao/complete 응답. `next` 는 카카오 로그인을 시작한 화면(서버가 검사한 사이트 안 경로). */
+export interface KakaoSignupResponse {
+  user: SessionUser;
+  next: string;
+}
+
+/**
  * GET /api/auth/me 응답.
  *
  * 로그인하지 않았으면 401 이 아니라 200 + `user: null` 이다.
@@ -217,6 +231,21 @@ export interface AuthResponse {
  */
 export interface MeResponse {
   user: SessionUser | null;
+  /** 동네 인증이 유효한가(180일 이내). 로그인 안 했으면 false. 인증 날짜 자체는 내려주지 않는다. */
+  neighborhoodVerified: boolean;
+}
+
+/* ---------- 노원 동네 인증 ---------- */
+
+/**
+ * POST · DELETE /api/me/neighborhood 응답 (로그인 필요).
+ *
+ * 위치 판정은 브라우저에서 끝난다(`lib/neighborhood.ts` 의 `checkPosition` 이 'inside' 일 때만 POST).
+ * POST 본문은 `{}` 다. 좌표를 실어 보내도 서버는 읽지도 저장하지도 않는다.
+ * POST 는 지금 시각(ISO), DELETE 는 null. 오류: 400 본문 형식(POST) · 401 로그인 필요.
+ */
+export interface NeighborhoodResponse {
+  verifiedAt: string | null;
 }
 
 /* ---------- 질문 · 답변 · 확인 ---------- */
@@ -240,6 +269,11 @@ export interface AnswerItem {
    * 닉네임은 겹칠 수 있어 화면에서 비교하지 않고, 작성자 id 는 내려주지 않는다.
    */
   authoredByMe: boolean;
+  /**
+   * 작성자가 노원 동네 인증을 했는가 (180일 이내). 화면은 true 면 "노원 인증" 배지를 붙인다.
+   * 답변을 쓴 시점이 아니라 지금 기준이다. 인증 날짜는 내려주지 않는다.
+   */
+  authorNeighborhoodVerified: boolean;
   createdAt: string;
 }
 

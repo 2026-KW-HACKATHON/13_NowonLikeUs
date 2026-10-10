@@ -5,13 +5,17 @@ import Link from 'next/link';
 import { ANSWER_MAX, validateAnswer } from '@/lib/answerValidation';
 import { readApiError } from '@/lib/authView';
 import { canDeleteQuestion } from '@/lib/moderation';
+import { withMyNeighborhood } from '@/lib/neighborhoodView';
 import {
   QUESTION_TABS,
   answerSlot,
   askerContext,
+  boardUrl,
   confirmSlot,
   isModerator,
+  mineStateLabel,
   timeAgo,
+  type BoardTab,
   withAnswer,
   withAnswerHidden,
   withAnswerRestored,
@@ -31,8 +35,13 @@ import type {
   QuestionListResponse,
   QuestionStatus,
 } from '@/lib/types';
+import NeighborhoodVerify from './NeighborhoodVerify';
 
-type Load = { kind: 'loading' } | { kind: 'failed'; message: string } | { kind: 'ready'; questions: QuestionItem[] };
+type Load =
+  | { kind: 'loading' }
+  | { kind: 'failed'; message: string }
+  | { kind: 'login' }
+  | { kind: 'ready'; questions: QuestionItem[] };
 
 /**
  * 질문 목록. 탭이 바뀌면 부모가 `key` 로 새로 만들어서, 불러오는 중 상태부터 다시 시작한다.
@@ -41,8 +50,11 @@ type Load = { kind: 'loading' } | { kind: 'failed'; message: string } | { kind: 
  *
  * 운영자(ADMIN)에게만 정리 버튼이 보인다 — 질문 지우기(되돌릴 수 없어 한 번 더 묻는다) · 답변 숨기기(되돌릴 수 있다).
  * 질문은 로그인 없이 올라와 표지에도 뜨므로, 장난 · 욕설 · 개인정보를 시연 중에도 화면에서 바로 내리기 위한 것이다.
+ *
+ * "내 질문"(MINE)은 내가 쓴 질문을 상태를 섞어 보여 준다. 답을 보러 오는 곳이라 답변 쓰기 칸은 띄우지 않는다.
  */
-export default function QuestionBoard({ status }: { status: QuestionStatus }) {
+export default function QuestionBoard({ status }: { status: BoardTab }) {
+  const mine = status === 'MINE';
   const [load, setLoad] = useState<Load>({ kind: 'loading' });
   const [attempt, setAttempt] = useState(0);
   // 질문을 지우면 그 카드가 사라져 결과를 알릴 자리가 없다. 목록 위에서 알린다.
@@ -51,13 +63,15 @@ export default function QuestionBoard({ status }: { status: QuestionStatus }) {
 
   useEffect(() => {
     let ignore = false;
-    fetch(`/api/questions?status=${status}`, { cache: 'no-store' })
+    fetch(boardUrl(status), { cache: 'no-store' })
       .then(async (res) => {
+        // "내 질문"을 열어 둔 사이 로그아웃했거나 세션이 끝난 경우다.
+        if (res.status === 401) return null;
         if (!res.ok) throw new Error(await readApiError(res, '질문을 불러오지 못했습니다.'));
         return (await res.json()) as QuestionListResponse;
       })
       .then((body) => {
-        if (!ignore) setLoad({ kind: 'ready', questions: body.questions });
+        if (!ignore) setLoad(body ? { kind: 'ready', questions: body.questions } : { kind: 'login' });
       })
       .catch((e: unknown) => {
         if (ignore) return;
@@ -115,6 +129,15 @@ export default function QuestionBoard({ status }: { status: QuestionStatus }) {
     );
   }
 
+  if (load.kind === 'login') {
+    return (
+      <p className="empty">
+        로그인하면 내가 남긴 질문을 모아 볼 수 있습니다.{' '}
+        <Link href={`/login?next=${encodeURIComponent('/questions?status=MINE')}`}>로그인하기</Link>
+      </p>
+    );
+  }
+
   const noticeLine = notice && (
     <p className="qboard__notice" role="status">
       {notice}
@@ -138,6 +161,7 @@ export default function QuestionBoard({ status }: { status: QuestionStatus }) {
           <li key={q.id}>
             <QuestionCard
               question={q}
+              mine={mine}
               isTarget={q.id === targetId}
               onAnswered={(answer) => update((list) => withAnswer(list, q.id, answer))}
               onConfirmed={(answerId, res) => update((list) => withConfirm(list, answerId, res))}
@@ -147,6 +171,7 @@ export default function QuestionBoard({ status }: { status: QuestionStatus }) {
               }}
               onHidden={(answerId, status) => update((list) => withAnswerHidden(list, answerId, status))}
               onRestored={(answer, status) => update((list) => withAnswerRestored(list, answer, status))}
+              onNeighborhood={(verified) => update((list) => withMyNeighborhood(list, verified))}
             />
           </li>
         ))}
@@ -157,20 +182,26 @@ export default function QuestionBoard({ status }: { status: QuestionStatus }) {
 
 function QuestionCard({
   question: q,
+  mine,
   isTarget,
   onAnswered,
   onConfirmed,
   onDeleted,
   onHidden,
   onRestored,
+  onNeighborhood,
 }: {
   question: QuestionItem;
+  /** "내 질문" 탭의 카드. 상태 글자를 붙이고 답변 쓰기 칸은 띄우지 않는다. */
+  mine: boolean;
   isTarget: boolean;
   onAnswered: (answer: AnswerItem) => void;
   onConfirmed: (answerId: string, res: ConfirmAnswerResponse) => void;
   onDeleted: () => void;
   onHidden: (answerId: string, status: QuestionStatus) => void;
   onRestored: (answer: AnswerItem, status: QuestionStatus) => void;
+  /** 동네 인증 · 인증 지우기 직후. 목록 전체의 내 답변 배지를 맞춘다. */
+  onNeighborhood: (verified: boolean) => void;
 }) {
   const session = useSession();
   const moderator = isModerator(session.user);
@@ -180,6 +211,7 @@ function QuestionCard({
   const headingId = useId();
   const now = new Date();
   const slot = answerSlot(q.status, { loaded: session.loaded, loggedIn: session.user !== null });
+  const mineState = mine ? mineStateLabel(q.status) : null;
 
   return (
     // tabIndex -1: 주소의 #q-... 로 왔을 때 스크린리더 초점을 이 질문으로 옮길 수 있게.
@@ -191,6 +223,11 @@ function QuestionCard({
       */}
       <div className="qcard__meta">
         {q.status === 'PROMOTED' && <span className="qcard__state qcard__state--promoted">할 일로 정리됨</span>}
+        {mineState && (
+          <span className="qcard__state qcard__state--mine" data-status={q.status}>
+            {mineState}
+          </span>
+        )}
         <span>{timeAgo(q.createdAt, now)}</span>
       </div>
       <h2 id={headingId} className="qcard__text">
@@ -241,12 +278,12 @@ function QuestionCard({
       )}
 
       {slot === 'closed' && <p className="qcard__closed">이 질문은 확인을 거쳐 할 일 목록에 올라갔습니다.</p>}
-      {slot === 'login' && (
+      {!mine && slot === 'login' && (
         <Link className="qcard__login" href={`/login?next=${encodeURIComponent(`/questions?status=${q.status}#q-${q.id}`)}`}>
           로그인하고 답하기
         </Link>
       )}
-      {slot === 'form' && <AnswerForm questionId={q.id} onAnswered={onAnswered} />}
+      {!mine && slot === 'form' && <AnswerForm questionId={q.id} onAnswered={onAnswered} onNeighborhood={onNeighborhood} />}
       {moderator && canDeleteQuestion(q.status) && <DeleteQuestion questionId={q.id} onDeleted={onDeleted} />}
     </article>
   );
@@ -293,7 +330,9 @@ function AnswerRow({
       <div className="answer-row__foot">
         <span className="answer-row__by">
           {a.authoredByMe && <span className="answer-row__mine">내 답변 · </span>}
-          {a.authorNickname} · {timeAgo(a.createdAt, now)}
+          {a.authorNickname}
+          {/* 작성자가 노원구 안에서 위치를 확인했다는 표시일 뿐, 답의 내용을 확인했다는 뜻이 아니다. */}
+          {a.authorNeighborhoodVerified && <span className="nbadge">노원 인증</span>} · {timeAgo(a.createdAt, now)}
         </span>
         {canConfirm ? (
           <button
@@ -336,7 +375,15 @@ function AnswerRow({
   );
 }
 
-function AnswerForm({ questionId, onAnswered }: { questionId: string; onAnswered: (answer: AnswerItem) => void }) {
+function AnswerForm({
+  questionId,
+  onAnswered,
+  onNeighborhood,
+}: {
+  questionId: string;
+  onAnswered: (answer: AnswerItem) => void;
+  onNeighborhood: (verified: boolean) => void;
+}) {
   const [open, setOpen] = useState(false);
   const [text, setText] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -445,6 +492,7 @@ function AnswerForm({ questionId, onAnswered }: { questionId: string; onAnswered
           취소
         </button>
       </div>
+      <NeighborhoodVerify onChange={onNeighborhood} />
     </form>
   );
 }

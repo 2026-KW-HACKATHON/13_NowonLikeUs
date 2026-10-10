@@ -1,3 +1,4 @@
+import { isNeighborhoodVerified } from './neighborhood';
 import type { AnswerItem, Confidence, ContractType, HousingType, QuestionItem, QuestionStatus } from './types';
 
 /*
@@ -12,6 +13,7 @@ export const QUESTION_STATUSES: readonly QuestionStatus[] = ['OPEN', 'ANSWERED',
  * 작성자 · 질문자는 닉네임만 꺼낸다 — 이메일 · 해시는 절대 꺼내지 않는다.
  * "내가 눌렀는가"는 내 확인 행만 골라 존재 여부로 본다. 비로그인이면 아무 행도 걸리지 않는다.
  * "내가 썼는가"는 작성자 id 를 꺼내 toAnswerItem 에서 비교만 하고, id 자체는 응답에 싣지 않는다.
+ * 작성자 동네 인증 날짜도 같다 — toAnswerItem 에서 참 · 거짓으로만 바꿔 싣는다.
  */
 export function questionSelect(viewerId: string | null) {
   return {
@@ -41,7 +43,8 @@ export function answerSelect(viewerId: string | null) {
     createdAt: true,
     // "내가 썼는가" 비교용. 응답에는 내보내지 않는다(다른 사람 id 노출 방지).
     authorId: true,
-    author: { select: { nickname: true } },
+    // 인증 날짜는 배지 판정(toAnswerItem)에만 쓴다. 응답에는 참 · 거짓만 싣는다.
+    author: { select: { nickname: true, neighborhoodVerifiedAt: true } },
     _count: { select: { confirmations: true } },
     // 비로그인이면 어떤 사용자 id 와도 같지 않은 빈 문자열로 걸러 항상 빈 배열이 된다.
     confirmations: { where: { userId: viewerId ?? '' }, select: { id: true } },
@@ -56,7 +59,8 @@ export interface AnswerRow {
   createdAt: Date;
   /** 비교용. 응답에는 싣지 않는다. */
   authorId: string;
-  author: { nickname: string };
+  /** 인증 날짜는 판정용. 응답에는 싣지 않는다. */
+  author: { nickname: string; neighborhoodVerifiedAt: Date | null };
   _count: { confirmations: number };
   /** 내가 누른 확인 행. 있으면 1개, 없으면 빈 배열 */
   confirmations: { id: string }[];
@@ -79,8 +83,9 @@ export interface QuestionRow {
 /**
  * 답변 하나. viewerId 는 지금 로그인한 사람의 id(비로그인이면 null).
  * 작성자 id 는 비교에만 쓰고 결과에 담지 않는다 — confirmedByMe 와 같은 방식이다.
+ * 작성자 동네 인증도 `now` 기준 참 · 거짓으로만 담고, 날짜는 담지 않는다.
  */
-export function toAnswerItem(row: AnswerRow, viewerId: string | null): AnswerItem {
+export function toAnswerItem(row: AnswerRow, viewerId: string | null, now: Date = new Date()): AnswerItem {
   return {
     id: row.id,
     questionId: row.questionId,
@@ -89,6 +94,7 @@ export function toAnswerItem(row: AnswerRow, viewerId: string | null): AnswerIte
     confirmationCount: row._count.confirmations,
     confirmedByMe: row.confirmations.length > 0,
     authoredByMe: viewerId !== null && row.authorId === viewerId,
+    authorNeighborhoodVerified: isNeighborhoodVerified(row.author.neighborhoodVerifiedAt, now),
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -98,6 +104,8 @@ export interface QuestionItemOptions {
   viewerId?: string | null;
   /** 질문자 닉네임을 보여줄지. 운영자 승격 큐에서만 true. */
   showAsker?: boolean;
+  /** 동네 인증 배지 판정 기준 시각. 기본은 지금. 한 응답 안의 답변은 모두 같은 시각으로 판정한다. */
+  now?: Date;
 }
 
 /**
@@ -105,7 +113,10 @@ export interface QuestionItemOptions {
  * AI 가 모른다고 한 질문(UNKNOWN)은 aiAnswer 를 null 로 내린다(`lib/types.ts` 계약).
  */
 // 질문은 원래 익명이다. 공개 목록에는 닉네임을 내리지 않고, 운영자 승격 큐에서만 보여준다.
-export function toQuestionItem(row: QuestionRow, { viewerId = null, showAsker = false }: QuestionItemOptions = {}): QuestionItem {
+export function toQuestionItem(
+  row: QuestionRow,
+  { viewerId = null, showAsker = false, now = new Date() }: QuestionItemOptions = {},
+): QuestionItem {
   return {
     id: row.id,
     text: row.text,
@@ -115,7 +126,7 @@ export function toQuestionItem(row: QuestionRow, { viewerId = null, showAsker = 
     aiAnswer: row.confidence === 'UNKNOWN' ? null : row.aiAnswer,
     confidence: row.confidence,
     status: row.status,
-    answers: row.answers.map((answer) => toAnswerItem(answer, viewerId)),
+    answers: row.answers.map((answer) => toAnswerItem(answer, viewerId, now)),
     createdAt: row.createdAt.toISOString(),
   };
 }
@@ -135,6 +146,15 @@ export function boardWhere(status: QuestionStatus | null) {
     OR: [{ confidence: { not: 'GROUNDED' as const } }, { askNeighbors: true }],
     ...(status ? { status } : {}),
   };
+}
+
+/**
+ * "내 질문" 목록 조건. 이웃의 질문 목록에 올라간 질문 중 내가 로그인해서 쓴 것만, 상태는 섞어서.
+ * 확인된 정보로 바로 답한 질문은 이웃이 답할 일이 없어 목록과 똑같이 뺀다.
+ * 비로그인으로 쓴 질문은 askerId 가 없어 누구 것인지 알 수 없으므로 여기 나오지 않는다.
+ */
+export function mineWhere(viewerId: string) {
+  return { ...boardWhere(null), askerId: viewerId };
 }
 
 /**

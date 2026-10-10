@@ -1,5 +1,15 @@
 import { describe, it, expect } from 'vitest';
-import { askProfile, describeAnswer, sendsQuestionsToGoogle } from '@/lib/askView';
+import { askProfile, describeAnswer, onBoardLink, sendsQuestionsToGoogle } from '@/lib/askView';
+
+describe('onBoardLink', () => {
+  it('로그인했으면 내 질문 탭의 그 질문으로', () => {
+    expect(onBoardLink('q1', true)).toEqual({ href: '/questions?status=MINE#q-q1', label: '내 질문에서 보기' });
+  });
+
+  it('비로그인이면 답을 기다리는 질문 탭의 그 질문으로', () => {
+    expect(onBoardLink('q1', false)).toEqual({ href: '/questions?status=OPEN#q-q1', label: '이웃의 질문에서 보기' });
+  });
+});
 import { matchesProfile } from '@/lib/matching';
 import type { AskResponse, MatchedTask, Profile, TaskConditions } from '@/lib/types';
 

@@ -1,14 +1,15 @@
 import { describe, it, expect } from 'vitest';
 import {
-  answerSlot, askerContext, confirmSlot, isModerator, parseTab, timeAgo, withAnswer, withAnswerHidden, withAnswerRestored,
-  withConfirm, withoutQuestion,
+  answerSlot, askerContext, boardUrl, confirmSlot, isModerator, mineStateLabel, parseTab, timeAgo, visibleTabs, withAnswer,
+  withAnswerHidden, withAnswerRestored, withConfirm, withoutQuestion,
 } from '@/lib/questionBoard';
 import type { AnswerItem, QuestionItem } from '@/lib/types';
 
 function answer(id: string, over: Partial<AnswerItem> = {}): AnswerItem {
   return {
     id, questionId: 'q1', authorNickname: '주민', text: id,
-    confirmationCount: 0, confirmedByMe: false, authoredByMe: false, createdAt: '2026-10-06T00:00:00Z', ...over,
+    confirmationCount: 0, confirmedByMe: false, authoredByMe: false, authorNeighborhoodVerified: false,
+    createdAt: '2026-10-06T00:00:00Z', ...over,
   };
 }
 
@@ -24,8 +25,50 @@ describe('parseTab', () => {
     expect(parseTab(s)).toBe(s);
   });
 
-  it.each([undefined, '', 'open', 'DELETED', ['ANSWERED']])('모르는 값이면 답을 기다리는 질문: %j', (raw) => {
+  it.each([undefined, '', 'open', 'DELETED', ['ANSWERED'], 'mine'])('모르는 값이면 답을 기다리는 질문: %j', (raw) => {
     expect(parseTab(raw)).toBe('OPEN');
+  });
+
+  it('내 질문은 로그인했을 때만 연다', () => {
+    expect(parseTab('MINE', true)).toBe('MINE');
+    expect(parseTab('MINE', false)).toBe('OPEN');
+    expect(parseTab('MINE')).toBe('OPEN');
+  });
+
+  it('로그인해도 다른 탭 판정은 그대로', () => {
+    expect(parseTab('ANSWERED', true)).toBe('ANSWERED');
+    expect(parseTab(undefined, true)).toBe('OPEN');
+  });
+});
+
+describe('visibleTabs', () => {
+  it('비로그인이면 상태 탭 셋만', () => {
+    expect(visibleTabs(false).map((t) => t.status)).toEqual(['OPEN', 'ANSWERED', 'PROMOTED']);
+  });
+
+  it('로그인하면 내 질문이 맨 앞에 붙는다', () => {
+    expect(visibleTabs(true).map((t) => t.status)).toEqual(['MINE', 'OPEN', 'ANSWERED', 'PROMOTED']);
+  });
+});
+
+describe('boardUrl', () => {
+  it('내 질문은 상태 없이 mine=1', () => {
+    expect(boardUrl('MINE')).toBe('/api/questions?mine=1');
+  });
+
+  it.each(['OPEN', 'ANSWERED', 'PROMOTED'] as const)('상태 탭은 status 로: %s', (s) => {
+    expect(boardUrl(s)).toBe(`/api/questions?status=${s}`);
+  });
+});
+
+describe('mineStateLabel', () => {
+  it('기다리는 질문과 답이 달린 질문을 구분한다', () => {
+    expect(mineStateLabel('OPEN')).toBe('답을 기다려요');
+    expect(mineStateLabel('ANSWERED')).toBe('답이 달렸어요');
+  });
+
+  it('할 일로 정리된 질문은 카드가 이미 표시하므로 null', () => {
+    expect(mineStateLabel('PROMOTED')).toBeNull();
   });
 });
 

@@ -79,13 +79,20 @@ model Task {
   updatedAt DateTime @updatedAt
 }
 
+/// 로그인 방법은 둘 중 하나다 — 이메일 + 비밀번호, 또는 카카오.
+/// 카카오 계정은 email · passwordHash 가 비고 kakaoId 만 있다. 이메일 계정은 kakaoId 가 빈다.
 model User {
-  id           String   @id @default(cuid())
-  email        String   @unique
-  passwordHash String
-  nickname     String
-  role         UserRole @default(MEMBER)
-  createdAt    DateTime @default(now())
+  id                     String    @id @default(cuid())
+  email                  String?   @unique
+  passwordHash           String?
+  /// 카카오 회원번호. 카카오에서 받는 정보는 이것뿐이다(닉네임 · 이메일 · 전화번호는 받지 않는다).
+  kakaoId                String?   @unique
+  nickname               String
+  role                   UserRole  @default(MEMBER)
+  createdAt              DateTime  @default(now())
+  /// 노원 동네 인증을 한 시각. 위치 판정은 브라우저에서만 하고, 여기에는 날짜만 남긴다(좌표는 저장하지 않는다).
+  /// 180일이 지나면 배지가 사라진다(lib/neighborhood.ts). 인증하지 않았거나 지웠으면 null.
+  neighborhoodVerifiedAt DateTime?
 
   questions     Question[]
   answers       Answer[]

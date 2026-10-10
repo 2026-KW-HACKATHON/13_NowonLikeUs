@@ -1,7 +1,8 @@
 import Link from 'next/link';
 import Masthead from '@/components/Masthead';
 import QuestionBoard from '@/components/QuestionBoard';
-import { QUESTION_TABS, parseTab } from '@/lib/questionBoard';
+import { getSessionUser } from '@/lib/auth';
+import { parseTab, visibleTabs } from '@/lib/questionBoard';
 
 export const metadata = { title: '이웃의 질문 · 월계는 처음이라' };
 
@@ -11,17 +12,17 @@ export const metadata = { title: '이웃의 질문 · 월계는 처음이라' };
  *
  * 보기는 로그인 없이 된다. 답변 · "맞아요"만 로그인이 필요하다 (설계안 2.1).
  * 탭은 링크라서 주소로 바로 열 수 있고 뒤로 가기가 탭 단위로 동작한다.
+ * 로그인했으면 맨 앞에 "내 질문" 탭이 붙는다 — 내가 남긴 질문에 답이 달렸는지 바로 보러 오는 길이다.
  */
 export default async function QuestionsPage({ searchParams }: PageProps<'/questions'>) {
-  const status = parseTab((await searchParams).status);
+  // 세션을 못 읽어도 목록은 보여준다. "내 질문" 탭만 빠진다.
+  const loggedIn = (await getSessionUser().catch(() => null)) !== null;
+  const status = parseTab((await searchParams).status, loggedIn);
 
   return (
     <main>
       {/* 상황 정보는 이 화면에서 쓰지 않는다. 질문은 상황과 상관없이 모두에게 보인다. */}
       <Masthead profile={null} />
-      <Link href="/tasks" className="back">
-        ← 내 할 일
-      </Link>
 
       <h1 className="page-title">이웃의 질문</h1>
       <p className="lead">
@@ -30,7 +31,7 @@ export default async function QuestionsPage({ searchParams }: PageProps<'/questi
       </p>
 
       <nav className="tabs" aria-label="질문 상태">
-        {QUESTION_TABS.map((tab) => (
+        {visibleTabs(loggedIn).map((tab) => (
           <Link
             key={tab.status}
             href={`/questions?status=${tab.status}`}

@@ -1,5 +1,33 @@
 import { describe, it, expect } from 'vitest';
-import { AUTH_LIMITS, DEFAULT_NEXT, loginFieldErrors, readApiError, safeNext, signupFieldErrors } from '@/lib/authView';
+import {
+  AUTH_LIMITS, DEFAULT_NEXT, kakaoErrorMessage, kakaoStartHref, loginFieldErrors, nicknameFieldError, readApiError, safeNext,
+  signupFieldErrors,
+} from '@/lib/authView';
+
+describe('kakaoErrorMessage', () => {
+  it.each(['cancelled', 'failed', 'unavailable'])('알려진 사유는 문장으로: %s', (raw) => {
+    expect(kakaoErrorMessage(raw)).toEqual(expect.any(String));
+  });
+
+  it.each([undefined, '', 'KOE006', ['failed']])('모르는 값이면 아무것도 안 띄운다: %j', (raw) => {
+    expect(kakaoErrorMessage(raw)).toBeNull();
+  });
+});
+
+describe('kakaoStartHref', () => {
+  it('돌아갈 화면을 인코딩해서 넘긴다', () => {
+    expect(kakaoStartHref('/questions?status=MINE#q-1')).toBe('/api/auth/kakao?next=%2Fquestions%3Fstatus%3DMINE%23q-1');
+  });
+});
+
+describe('nicknameFieldError', () => {
+  it('비었거나 길이가 안 맞으면 이유를, 맞으면 null', () => {
+    expect(nicknameFieldError('  ')).toBe('닉네임을 입력해 주세요.');
+    expect(nicknameFieldError('가')).toContain('자로 정해 주세요');
+    expect(nicknameFieldError('가'.repeat(AUTH_LIMITS.nicknameMax + 1))).toContain('자로 정해 주세요');
+    expect(nicknameFieldError(' 월계주민 ')).toBeNull();
+  });
+});
 
 describe('safeNext', () => {
   it.each(['/tasks', '/ask', '/tasks/abc?x=1', '/questions#a'])('사이트 안 경로는 그대로 둔다: %s', (path) => {
