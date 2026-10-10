@@ -148,7 +148,7 @@ npm run dev
 | `SESSION_SECRET` | 로그인 쿠키 서명 키 (32자 이상) |
 | `GEMINI_API_KEY` | Gemini API 키. **비워도 앱은 동작** — 키워드 검색으로 대체 |
 | `GEMINI_MODEL` | 기본 `gemini-3.1-flash-lite` |
-| `GEMINI_ALLOW_USER_INPUT` | `true` 일 때만 질문을 Gemini로 전송. 켜면 질문 화면에 전송 사실을 고지 |
+| `GEMINI_ALLOW_USER_INPUT` | `true` 일 때만 질문을 Gemini로 전송. 켜면 질문 화면에 전송 사실을 고지. 운영자 승격 AI 초안(질문 · 주민 답변 전송)도 이 값을 따른다 |
 | `ADMIN_EMAIL` · `ADMIN_PASSWORD` · `ADMIN_NICKNAME` | `npm run seed:admin` 이 운영자 계정을 만들 때만 사용 |
 
 질문 API의 데이터 처리와 외부 전송 조건은 [질문 API 안내](docs/ask-api.md)에 있습니다.
