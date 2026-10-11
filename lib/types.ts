@@ -367,6 +367,23 @@ export interface PromotionQueueResponse {
   items: PromotionQueueItem[];
 }
 
+/**
+ * GET /api/admin/tasks 응답의 할 일 한 건 (ADMIN). 발행된 할 일의 제목 · 분류 · 노출 조건만 담는다.
+ *
+ * 승격 화면이 "이 조건의 사람에게 이미 보이는 할 일"을 보여 주는 데 쓴다. 새 할 일이 기존 할 일과
+ * 서로 모르는 문장으로 나란히 뜨지 않게(예: "기숙사 강아지 반입 금지" ↔ "반려견 동물등록하기") 운영자가 보고 쓴다.
+ */
+export interface AdminTaskSummary extends TaskConditions {
+  id: string;
+  title: string;
+  category: TaskCategory;
+}
+
+/** GET /api/admin/tasks 응답 (ADMIN). 오류: 401 로그인 필요 · 403 운영자 아님. */
+export interface AdminTaskListResponse {
+  tasks: AdminTaskSummary[];
+}
+
 /** POST /api/admin/promote/draft 요청 (ADMIN) */
 export interface PromoteDraftRequest {
   questionId: string;

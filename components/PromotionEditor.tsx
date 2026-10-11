@@ -5,6 +5,7 @@ import { readApiError } from '@/lib/authView';
 import { CATEGORY_LABEL, CONTRACT_LABEL, HOUSING_LABEL } from '@/lib/labels';
 import { askerContext } from '@/lib/questionBoard';
 import { audienceSummary, emptyForm, formFromDraft, toPromoteRequest, toggle, type PromoteForm } from '@/lib/promotionForm';
+import TaskOverlapPanel from '@/components/TaskOverlapPanel';
 import type {
   ContractType,
   HousingType,
@@ -258,6 +259,7 @@ export default function PromotionEditor({
             <p className="audience" aria-live="polite">
               보이는 사람: <strong>{audienceSummary(form, { housing: HOUSING_LABEL, contract: CONTRACT_LABEL })}</strong>
             </p>
+            <TaskOverlapPanel conditions={form} />
           </fieldset>
 
           <TextField
