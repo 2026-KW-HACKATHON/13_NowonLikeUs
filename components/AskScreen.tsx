@@ -131,17 +131,20 @@ export default function AskScreen({ sendsToGoogle }: { sendsToGoogle: boolean })
           </p>
         </div>
 
-        {/* 제출 버튼 바로 위 — 누르기 직전에 읽히는 자리여야 고지가 고지 노릇을 한다. */}
-        <p id="ask-notice" className="ask-notice">
+        {/*
+          제출 버튼 바로 위 — 누르기 직전에 읽히는 자리여야 고지가 고지 노릇을 한다.
+          외부 전송 고지라 접어 숨기지 않는다. 대신 한 덩어리 문단을 짧은 줄 셋으로 나눠 훑어 읽히게 한다.
+        */}
+        <ul id="ask-notice" className="ask-notice">
           {sendsToGoogle && (
-            <>
-              질문 내용과 주거형태 · 계약형태는 관련 항목을 찾기 위해 Google(Gemini)로 전송됩니다.{' '}
-            </>
+            <li>관련 항목을 찾기 위해 질문 내용과 주거형태 · 계약형태를 Google(Gemini)로 보냅니다.</li>
           )}
-          확인된 정보로 답하지 못한 질문과 &lsquo;이웃에게 물어보기&rsquo;를 누른 질문은 주거형태 · 계약형태와 함께
-          &lsquo;이웃의 질문&rsquo;에 공개되어
-          주민이 답할 수 있습니다. 이름 · 연락처 · 상세 주소 같은 개인정보는 적지 마세요.
-        </p>
+          <li>
+            확인된 정보로 답하지 못하거나 &lsquo;이웃에게 물어보기&rsquo;를 누르면, 주거형태 · 계약형태와 함께
+            &lsquo;이웃의 질문&rsquo;에 공개되어 주민이 답할 수 있습니다.
+          </li>
+          <li>이름 · 연락처 · 상세 주소 같은 개인정보는 적지 마세요.</li>
+        </ul>
 
         <button type="submit" disabled={sending}>
           {sending ? '답을 찾는 중…' : '질문하기'}

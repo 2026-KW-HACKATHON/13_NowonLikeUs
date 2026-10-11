@@ -29,8 +29,10 @@ export default function ProfileForm({
   initial?: Profile | null;
   onSubmit: (profile: Profile) => void;
 }) {
-  const [housingType, setHousingType] = useState<HousingType>(initial?.housingType ?? 'ONE_ROOM');
-  const [contractType, setContractType] = useState<ContractType>(initial?.contractType ?? 'MONTHLY');
+  // 집 · 계약 형태는 처음에 아무것도 고르지 않은 상태로 둔다. 미리 골라 두면 기숙사생이 날짜만 넣고
+  // 넘어가도 원룸 · 월세 목록을 받는다. 결과가 이 두 값으로 갈리므로 꼭 직접 고르게 한다.
+  const [housingType, setHousingType] = useState<HousingType | null>(initial?.housingType ?? null);
+  const [contractType, setContractType] = useState<ContractType | null>(initial?.contractType ?? null);
   const [moveInDate, setMoveInDate] = useState(initial?.moveInDate ?? '');
   const [hasCar, setHasCar] = useState(initial?.hasCar ?? false);
   const [hasPet, setHasPet] = useState(initial?.hasPet ?? false);
@@ -38,7 +40,7 @@ export default function ProfileForm({
 
   function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
-    if (!moveInDate) return;
+    if (!housingType || !contractType || !moveInDate) return;
     onSubmit({ zone: ZONE, housingType, contractType, moveInDate, hasCar, hasPet, isStudent });
   }
 
@@ -49,11 +51,13 @@ export default function ProfileForm({
         <div className="choices">
           {HOUSING.map((option) => (
             <label key={option.value} className="choice">
+              {/* 같은 name 의 라디오 하나에만 required 가 있어도 묶음 전체가 필수가 된다. 날짜 칸과 같은 브라우저 안내가 뜬다. */}
               <input
                 type="radio"
                 name="housingType"
                 checked={housingType === option.value}
                 onChange={() => setHousingType(option.value)}
+                required
               />
               {option.label}
             </label>
@@ -71,6 +75,7 @@ export default function ProfileForm({
                 name="contractType"
                 checked={contractType === option.value}
                 onChange={() => setContractType(option.value)}
+                required
               />
               {option.label}
             </label>
@@ -108,11 +113,12 @@ export default function ProfileForm({
 
       <button type="submit">내 할 일 보기</button>
 
-      <p className="note">
-        상세 주소는 받지 않습니다. 상황 입력은 이 브라우저에 저장되며, 할 일 조회를 위해
-        서버로 전송되지만 조회 시에는 저장하지 않습니다. 별도로 질문을 제출하면 질문 내용과
-        주거형태·계약형태가 서버에 저장됩니다. 질문에 이름·연락처·상세 주소를 적지 마세요.
-      </p>
+      {/* 한 덩어리 문단이던 고지를 짧은 줄로 나눴다. 내용은 그대로다. */}
+      <ul className="note note-list">
+        <li>상세 주소는 받지 않습니다.</li>
+        <li>상황은 이 브라우저에 저장됩니다. 할 일을 찾을 때만 서버로 보내고, 서버에는 남기지 않습니다.</li>
+        <li>질문을 남기면 질문 내용과 주거형태 · 계약형태가 서버에 저장됩니다. 질문에 이름 · 연락처 · 상세 주소를 적지 마세요.</li>
+      </ul>
     </form>
   );
 }

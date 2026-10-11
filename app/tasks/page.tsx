@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import CategoryIcon from '@/components/CategoryIcon';
 import Masthead from '@/components/Masthead';
 import NextHelper from '@/components/NextHelper';
 import TaskCard from '@/components/TaskCard';
@@ -130,8 +131,10 @@ export default function TasksPage() {
       {groups.map((group) => (
         <section key={group.category} className="group" data-category={group.category}>
           <h2 className="group__head">
-            <span className="group__dot" aria-hidden="true" />
-            {CATEGORY_LABEL[group.category]}
+            <span className="cat-chip">
+              <CategoryIcon category={group.category} />
+              {CATEGORY_LABEL[group.category]}
+            </span>
             <span className="group__count">{group.tasks.length}건</span>
           </h2>
           {group.tasks.map((task) => (
