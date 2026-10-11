@@ -100,9 +100,13 @@ export default function ProfileForm({
             <input type="checkbox" checked={hasCar} onChange={(e) => setHasCar(e.target.checked)} />
             차가 있어요
           </label>
+          {/*
+            동물등록 의무는 개에만 있다(고양이는 선택 등록). "반려동물"로 물으면 고양이만 키우는 사람에게도
+            반려견 동물등록 · 과태료 할 일이 뜬다. 종류와 상관없는 반려동물 규칙이 할 일로 생기면 그때 항목을 나눈다.
+          */}
           <label className="choice">
             <input type="checkbox" checked={hasPet} onChange={(e) => setHasPet(e.target.checked)} />
-            반려동물과 살아요
+            강아지를 키워요
           </label>
           <label className="choice">
             <input type="checkbox" checked={isStudent} onChange={(e) => setIsStudent(e.target.checked)} />

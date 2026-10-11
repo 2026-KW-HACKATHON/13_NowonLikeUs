@@ -114,7 +114,7 @@ export function audienceSummary(
   if (form.housingTypes.length > 0) parts.push(form.housingTypes.map((h) => labels.housing[h]).join(' · '));
   if (form.contractTypes.length > 0) parts.push(form.contractTypes.map((c) => labels.contract[c]).join(' · '));
   if (form.requiresCar) parts.push('차 있음');
-  if (form.requiresPet) parts.push('반려동물 있음');
+  if (form.requiresPet) parts.push('강아지 있음');
   if (form.studentOnly) parts.push('학생');
   return parts.length === 0 ? '모든 사람' : parts.join(', ');
 }
