@@ -66,6 +66,7 @@ model Task {
   housingTypes  HousingType[]
   contractTypes ContractType[]
   requiresCar   Boolean        @default(false)
+  /// 강아지 키우는 사람에게만(동물등록 대상). 종류와 상관없는 반려동물 규칙에는 쓰지 않는다.
   requiresPet   Boolean        @default(false)
   studentOnly   Boolean        @default(false)
 
