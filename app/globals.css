@@ -1722,6 +1722,68 @@ button:disabled {
   color: var(--text);
 }
 
+/* 승격 양식의 "이미 보이는 할 일". 새 할 일과 말이 엇갈릴 수 있는 할 일을 조건 바로 아래에서 보여 준다. */
+.overlap {
+  display: grid;
+  gap: var(--space-1);
+  margin-top: var(--space-3);
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--rule-soft);
+  border-radius: 14px;
+  background: var(--surface);
+}
+
+.overlap .editor__sublabel,
+.overlap .editor__hint {
+  margin: 0;
+}
+
+.overlap__list {
+  display: grid;
+  gap: var(--space-1);
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.overlap__item {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px var(--space-1);
+  padding: var(--space-1) 0;
+  border-top: 1px solid var(--rule-soft);
+}
+
+.overlap__title {
+  font-weight: 700;
+}
+
+.overlap__shared {
+  width: 100%;
+  font-size: 14px;
+  color: var(--text-soft);
+}
+
+.overlap__more summary {
+  min-height: 44px;
+  display: flex;
+  align-items: center;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.overlap__plain {
+  margin: 0;
+  padding-left: 20px;
+  font-size: 15px;
+}
+
+.overlap__cat {
+  color: var(--text-soft);
+}
+
 .publish-notice {
   margin-bottom: var(--space-4);
   padding: var(--space-2) var(--space-3);
