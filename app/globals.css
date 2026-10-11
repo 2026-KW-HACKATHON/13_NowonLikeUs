@@ -1,7 +1,7 @@
 /*
  * 「월계는 처음이라」 화면 기준.
  *
- * 스타일: 공공 에디토리얼 — 굵은 구분선, 큰 숫자, 카테고리 색띠.
+ * 스타일: 둥근 카드와 연한 분류색 — 표지와 안쪽 화면이 같은 표면을 쓴다. 큰 숫자로 기한을 세운다.
  * 배리어프리 트랙이므로 본문 18px, 터치 타깃 48px 이상, 대비는 WCAG AAA(7:1)로 맞춘다.
  *
  * 색은 전부 계산해서 골랐다. 눈대중으로 정하지 않는다.
@@ -9,7 +9,7 @@
  * 입력 요소 테두리는 본문이 아니라 UI 경계라서 기준이 3:1 이다(WCAG 1.4.11).
  * --rule-soft(면 구분, 1.4:1)로는 모자라므로 --border-control 을 따로 둔다.
  *
- * 카테고리를 색으로만 구분하지 않는다. 색띠 옆에 항상 "행정" 같은 글자가 같이 붙는다.
+ * 카테고리를 색으로만 구분하지 않는다. 분류 칩에는 항상 아이콘과 "행정" 같은 글자가 같이 붙는다.
  */
 
 :root {
@@ -182,24 +182,22 @@ a {
 /* ---------- 머리말 ---------- */
 
 /*
- * 제호 아래 굵은 선 하나가 이 화면의 기준선이다. 에디토리얼 레이아웃의 출발점이라
- * 다른 요소의 선 굵기를 전부 여기에 맞춘다.
+ * 표지와 안쪽 화면이 같은 앱으로 보이게, 제호 아래 굵은 선 없이 여백으로만 나눈다.
+ * 조건 줄은 표지의 이름표와 같은 둥근 칩이다.
  */
 .masthead {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-1) var(--space-3);
-  padding-bottom: var(--space-2);
-  border-bottom: 3px solid var(--rule);
-  margin-bottom: var(--space-5);
+  margin-bottom: var(--space-4);
 }
 
 .masthead__top {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   justify-content: space-between;
   gap: var(--space-1) var(--space-3);
   width: 100%;
@@ -230,6 +228,10 @@ a {
 
 .masthead__meta {
   margin: 0;
+  padding: 4px 14px;
+  border: 1px solid var(--rule-soft);
+  border-radius: 999px;
+  background: var(--surface);
   font-size: 15px;
   font-weight: 500;
   color: var(--text-soft);
@@ -246,8 +248,7 @@ a {
   margin-bottom: var(--space-6);
   padding: var(--space-4);
   background: var(--cat-soft, var(--accent-soft));
-  border-left: 8px solid var(--cat, var(--accent));
-  border-radius: 0 var(--radius) var(--radius) 0;
+  border-radius: 20px;
   text-decoration: none;
   transition: filter 150ms ease;
 }
@@ -258,7 +259,8 @@ a {
 
 .hero.overdue {
   background: var(--danger-soft);
-  border-left-color: var(--danger);
+  outline: 2px solid var(--danger);
+  outline-offset: -2px;
 }
 
 /*
@@ -313,41 +315,57 @@ a {
 
 .group__head {
   display: flex;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-1);
   margin: 0 0 var(--space-2);
-  padding-bottom: var(--space-1);
-  border-bottom: 2px solid var(--rule);
   font-size: 16px;
   font-weight: 900;
   letter-spacing: -0.02em;
 }
 
-.group__dot {
-  width: 12px;
-  height: 12px;
-  border-radius: 3px;
-  background: var(--cat);
-}
-
 .group__count {
   margin-left: auto;
+  font-size: 15px;
   font-weight: 500;
   color: var(--text-soft);
+}
+
+/* 분류 칩. 표지의 분류 이름표(.cover__cat)와 같은 모양 — 아이콘 · 글자 · 연한 분류색. 색만으로 구분하지 않는다. */
+.cat-chip {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 14px 5px 11px;
+  border-radius: 999px;
+  background: var(--cat-soft);
+  color: var(--cat);
+  font-size: 15px;
+  font-weight: 900;
+  line-height: 1.4;
+}
+
+.cat-chip .icon {
+  width: 17px;
+  height: 17px;
+  flex: none;
 }
 
 /* ---------- 할 일 한 줄 ---------- */
 
 /*
- * 카드 상자를 걷어내고 색띠 + 가는 선으로 나눈다. 상자가 없으면 제목 크기와
- * 색띠만 남아서 위계가 또렷해진다.
+ * 둥근 흰 카드. 표지의 카드와 같은 표면이다. 분류는 묶음 제목의 칩이 알려 주므로
+ * 카드 안에는 제목 · 기한 · 이유만 둔다.
  */
 .task-row {
-  display: block;
-  padding: var(--space-3) var(--space-3) var(--space-3) var(--space-2);
-  border-left: 5px solid var(--cat);
-  border-bottom: 1.5px solid var(--rule-soft);
-  text-decoration: none;
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  align-items: start;
+  column-gap: var(--space-1);
+  margin-bottom: 10px;
+  padding: var(--space-1) var(--space-2) var(--space-1) var(--space-1);
+  border: 1px solid var(--rule-soft);
+  border-radius: 16px;
+  background: var(--surface);
   transition: background 150ms ease;
 }
 
@@ -355,13 +373,84 @@ a {
   background: var(--cat-soft);
 }
 
+/* 카드의 나머지 전체가 상세로 가는 링크. 위아래 여백까지 눌리게 링크 쪽에 패딩을 준다. */
+.task-row__link {
+  display: block;
+  padding: var(--space-1) 0;
+  color: inherit;
+  text-decoration: none;
+}
+
+/* 완료 체크. 44px 누를 자리 안에 동그라미 하나. 누르면 "끝낸 일"로 내려간다. */
+.task-row__check {
+  display: grid;
+  place-items: center;
+  width: 44px;
+  min-height: 44px;
+  height: 44px;
+  margin-top: 4px;
+  padding: 0;
+  border: none;
+  border-radius: 999px;
+  background: none;
+  color: var(--text);
+  cursor: pointer;
+}
+
+.task-row__check svg {
+  width: 30px;
+  height: 30px;
+  padding: 4px;
+  border: 2px solid var(--border-control);
+  border-radius: 999px;
+  fill: none;
+  stroke: transparent;
+  stroke-width: 2.6;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+  transition: background 150ms ease, border-color 150ms ease;
+}
+
+.task-row__check:hover svg {
+  border-color: var(--accent);
+  stroke: var(--border-control);
+}
+
+.task-row__check[aria-pressed="true"] svg {
+  border-color: var(--accent);
+  background: var(--accent);
+  stroke: var(--on-accent);
+}
+
+.task-row__error {
+  grid-column: 1 / -1;
+  margin: var(--space-1) 0 0;
+  font-size: 15px;
+  font-weight: 700;
+  color: var(--danger);
+}
+
+/* 기한 없는 "알아 두기"는 한 단계 낮춘다. 제목 조금 작게, 이유는 한 줄만(전문은 상세에). */
+.task-row--quiet .task-row__title {
+  font-size: 18px;
+}
+
+.task-row--quiet .task-row__why {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 1;
+  overflow: hidden;
+  font-size: 15px;
+}
+
 .task-row__top {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
+  align-items: center;
   gap: var(--space-1);
-  margin-bottom: 2px;
-  font-size: 15px;
+  float: right;
+  margin: 2px 0 4px var(--space-2);
+  font-size: 14px;
   font-weight: 700;
 }
 
@@ -369,18 +458,27 @@ a {
   color: var(--cat);
 }
 
-/* 기한은 오른쪽 끝에 세워서 세로로 읽히게 한다. 목록을 훑을 때 기한만 따라가게 된다. */
+/*
+ * 기한은 제목 오른쪽 위에 세워서 세로로 읽히게 한다. 목록을 훑을 때 기한만 따라가게 된다.
+ * 날짜가 있는 기한은 붉은 알약으로 띄우고, "기한 없음"은 작은 회색 글자로 한 단계 낮춘다.
+ */
 .task-row__due {
-  margin-left: auto;
+  padding: 2px 10px;
+  border-radius: 999px;
+  background: var(--danger-soft);
+  color: var(--danger);
   font-variant-numeric: tabular-nums;
-  color: var(--text-soft);
 }
 
 .task-row__due.overdue {
-  color: var(--danger);
+  background: var(--danger);
+  color: var(--surface);
 }
 
 .task-row__due.none {
+  padding: 2px 0;
+  background: none;
+  color: var(--text-soft);
   font-weight: 500;
 }
 
@@ -392,6 +490,7 @@ a {
 }
 
 .task-row__why {
+  clear: both;
   margin: 0;
   font-size: 16px;
   color: var(--text-soft);
@@ -421,45 +520,60 @@ a {
 }
 
 .detail-head {
-  padding-left: var(--space-3);
-  border-left: 8px solid var(--cat, var(--accent));
-  margin-bottom: var(--space-4);
+  margin-bottom: var(--space-3);
 }
 
 .detail-head__top {
   display: flex;
   flex-wrap: wrap;
-  align-items: baseline;
-  gap: var(--space-1) var(--space-3);
-  font-size: 16px;
+  align-items: center;
+  gap: var(--space-1);
+  font-size: 15px;
   font-weight: 700;
 }
 
-.detail-head__cat {
-  color: var(--cat, var(--accent));
-}
-
+/* 목록의 기한 알약과 같다. */
 .detail-head__due {
+  padding: 3px 12px;
+  border-radius: 999px;
+  background: var(--danger-soft);
+  color: var(--danger);
   font-variant-numeric: tabular-nums;
-  color: var(--text-soft);
 }
 
 .detail-head__due.overdue {
-  color: var(--danger);
+  background: var(--danger);
+  color: var(--surface);
+}
+
+.detail-head__due.none {
+  padding: 3px 0;
+  background: none;
+  color: var(--text-soft);
+  font-weight: 500;
 }
 
 .detail-head h1 {
-  margin: 4px 0 0;
+  margin: var(--space-1) 0 0;
   font-size: clamp(28px, 8vw, 34px);
   font-weight: 900;
   line-height: 1.25;
   letter-spacing: -0.03em;
 }
 
+/* 굵은 가로선 대신 둥근 흰 카드로 나눈다. 버튼만 든 구획(온라인으로 · 완료)은 카드 없이 둔다. */
 .detail-section {
-  margin-top: var(--space-4);
-  padding-top: var(--space-4);
-  border-top: 2px solid var(--rule);
+  margin-top: var(--space-2);
+  padding: var(--space-3);
+  border: 1px solid var(--rule-soft);
+  border-radius: 16px;
+  background: var(--surface);
+}
+
+.detail-section--plain {
+  padding: 0;
+  border: none;
+  background: none;
 }
 
 .detail-section h2 {
@@ -497,13 +611,37 @@ a {
 }
 
 /* 전화는 링크로 둔다. 번호를 옮겨 적다가 틀리는 걸 막는다. */
-/* 전화 걸기는 이 화면의 핵심 동작이다. 글자 높이만큼만 눌리면 손가락으로 맞히기 어렵다. */
+/* 전화 걸기는 이 화면의 핵심 동작이다. 카드 폭 전체를 쓰는 연한 초록 버튼으로 둬서 손가락으로 쉽게 누른다. */
 .tel {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  min-height: 44px;
-  font-weight: 700;
+  justify-content: center;
+  gap: var(--space-1);
+  min-height: 52px;
+  margin-top: var(--space-2);
+  padding: 0 var(--space-2);
+  border-radius: 12px;
+  background: var(--accent-soft);
   color: var(--accent);
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  text-decoration: none;
+  transition: filter 150ms ease;
+}
+
+.tel:hover {
+  filter: brightness(0.96);
+}
+
+.tel__icon {
+  flex: none;
+  width: 22px;
+  height: 22px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
 }
 
 /* 외부로 나가는 버튼. button 과 똑같이 보이되 a 태그다. */
@@ -533,7 +671,8 @@ a {
 .warn {
   margin: var(--space-3) 0 0;
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--danger);
+  border: 1.5px solid var(--danger);
+  border-radius: 14px;
   background: var(--danger-soft);
   color: var(--danger);
   font-weight: 700;
@@ -669,6 +808,19 @@ button:active {
   margin-top: var(--space-2);
 }
 
+/* 질문하기 고지(목록). 줄머리 점 자리만큼 왼쪽을 더 띄운다. 답변 쓰기 칸의 고지는 한 문단이라 그대로. */
+ul.ask-notice {
+  padding-left: calc(var(--space-3) + 18px);
+}
+
+/* 고지를 짧은 줄로 나눈 목록. 줄머리 점으로 한 줄씩 끊어 읽히게 한다. */
+.note-list {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 0;
+  padding-left: 20px;
+}
+
 /* ---------- 상태 ---------- */
 
 .empty {
@@ -679,7 +831,7 @@ button:active {
 .nav {
   margin-top: var(--space-6);
   padding-top: var(--space-3);
-  border-top: 2px solid var(--rule);
+  border-top: 1px solid var(--rule-soft);
   display: flex;
   flex-wrap: wrap;
   gap: var(--space-4);
@@ -697,8 +849,7 @@ button:active {
 
 /*
  * 할 일 · 물어보기 · 이웃 질문을 오가는 탭. 화면 아래에 고정한다 (components/TabBar.tsx).
- * 위쪽 굵은 선은 제호 아래 기준선과 같은 굵기다. 지금 화면은 글자색과 위쪽 막대 두 가지로
- * 알린다 — 색만으로 구분하지 않는다.
+ * 지금 화면은 글자색과 아이콘 뒤 알약 배경 두 가지로 알린다 — 색만으로 구분하지 않는다.
  */
 .tabbar {
   position: fixed;
@@ -707,7 +858,7 @@ button:active {
   bottom: 0;
   z-index: 10;
   background: var(--surface);
-  border-top: 2px solid var(--rule);
+  border-top: 1px solid var(--rule-soft);
   padding-bottom: env(safe-area-inset-bottom);
 }
 
@@ -739,19 +890,12 @@ button:active {
   color: var(--accent);
 }
 
-.tabbar__item[aria-current="page"]::before {
-  content: "";
-  position: absolute;
-  top: 0;
-  left: 22%;
-  right: 22%;
-  height: 4px;
-  background: var(--accent);
-}
-
+/* 아이콘 칸은 탭마다 같은 크기로 잡아 두고, 지금 탭만 알약 배경을 칠한다. 바뀔 때 글자가 움직이지 않는다. */
 .tabbar__icon {
-  width: 26px;
-  height: 26px;
+  width: 60px;
+  height: 32px;
+  padding: 3px 17px;
+  border-radius: 999px;
   fill: none;
   stroke: currentColor;
   stroke-width: 2;
@@ -759,13 +903,17 @@ button:active {
   stroke-linejoin: round;
 }
 
+.tabbar__item[aria-current="page"] .tabbar__icon {
+  background: var(--accent-soft);
+}
+
 .tabbar__item:focus-visible {
   outline-offset: -4px;
 }
 
-/* 탭 높이(64px) + 선(2px) + 아이폰 홈 막대만큼. 마지막 카드가 탭 밑에 깔리지 않게 한다. */
+/* 탭 높이(64px) + 선(1px) + 아이폰 홈 막대만큼. 마지막 카드가 탭 밑에 깔리지 않게 한다. */
 .tabbar-spacer {
-  height: calc(66px + env(safe-area-inset-bottom));
+  height: calc(65px + env(safe-area-inset-bottom));
 }
 
 @media print {
@@ -793,17 +941,21 @@ button:active {
   color: var(--text);
 }
 
-/* 바 테두리는 UI 경계라 3:1 이상이어야 한다(WCAG 1.4.11). 숫자도 글로 같이 적어 둔다. */
+/*
+ * 빈 막대에도 바탕색을 깔아 "채울 자리"가 보이게 한다. 숫자는 글로 같이 적어 두므로
+ * 막대는 보조 표시다. 0건이어도 맨 앞 점 하나는 칠해 막대가 비어 보이지 않게 한다.
+ */
 .progress__bar {
-  height: 14px;
-  border: 1.5px solid var(--border-control);
+  height: 12px;
   border-radius: 999px;
-  background: var(--surface);
+  background: var(--rule-soft);
   overflow: hidden;
 }
 
 .progress__fill {
+  min-width: 12px;
   height: 100%;
+  border-radius: 999px;
   background: var(--accent);
   transition: width 300ms ease;
 }
@@ -811,7 +963,7 @@ button:active {
 .next-helper {
   margin: 0 0 var(--space-6);
   padding: var(--space-4);
-  border-left: 8px solid var(--accent);
+  border-radius: 20px;
   background: var(--accent-soft);
 }
 
@@ -908,9 +1060,12 @@ button:active {
 
 /* 제출 버튼 바로 위에 둔다. 누르기 직전에 읽히는 자리여야 고지가 고지 노릇을 한다. */
 .ask-notice {
+  display: grid;
+  gap: 4px;
   margin: var(--space-3) 0 var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--border-control);
+  border: 1px solid var(--rule-soft);
+  border-radius: 14px;
   background: var(--surface);
   font-size: 15px;
   color: var(--text-soft);
@@ -926,7 +1081,7 @@ button:disabled {
 .ask-result__title {
   margin: 0 0 var(--space-2);
   padding-top: var(--space-4);
-  border-top: 2px solid var(--rule);
+  border-top: 1px solid var(--rule-soft);
   font-size: 20px;
   font-weight: 900;
 }
@@ -939,8 +1094,6 @@ button:disabled {
 /* 결과의 중심은 원문 카드다. 목록 화면의 묶음 제목과 같은 모양으로 둔다. */
 .ask-result__sub {
   margin: var(--space-5) 0 var(--space-2);
-  padding-bottom: var(--space-1);
-  border-bottom: 2px solid var(--rule);
   font-size: 16px;
   font-weight: 900;
   letter-spacing: -0.02em;
@@ -949,17 +1102,18 @@ button:disabled {
 .answer {
   margin: 0;
   padding: var(--space-3);
-  border-left: 8px solid var(--border-control);
+  border: 1.5px solid var(--border-control);
+  border-radius: 16px;
   background: var(--surface);
 }
 
 .answer--grounded {
-  border-left-color: var(--accent);
+  border-color: var(--accent);
   background: var(--accent-soft);
 }
 
 .answer--partial {
-  border-left-color: var(--conf-partial);
+  border-color: var(--conf-partial);
   background: var(--conf-partial-soft);
 }
 
@@ -1227,7 +1381,7 @@ button:disabled {
   flex-wrap: wrap;
   gap: 0 var(--space-1);
   margin-bottom: var(--space-4);
-  border-bottom: 2px solid var(--rule);
+  border-bottom: 1.5px solid var(--rule-soft);
 }
 
 .tabs__item {
@@ -1322,14 +1476,21 @@ button:disabled {
   color: var(--text-soft);
 }
 
+/* 답하기는 이 화면의 주요 행동이라 밑줄 링크가 아니라 테두리 버튼 모양으로 둔다(.secondary-button 과 같은 결). */
 .qcard__login {
   display: inline-flex;
   align-items: center;
+  justify-content: center;
   min-height: 48px;
+  padding: 0 var(--space-3);
+  border: 2px solid var(--accent);
+  border-radius: var(--radius);
+  color: var(--accent);
   font-weight: 700;
+  text-decoration: none;
 }
 
-/* 주민 답변은 확인 전 정보라 할 일 카드(색띠)와 다르게 보여야 한다. 회색 세로줄로 "인용"처럼. */
+/* 주민 답변은 확인 전 정보라 할 일 카드와 다르게 보여야 한다. 한쪽 모서리가 각진 말풍선으로 "누가 한 말"처럼. */
 .answers {
   margin: var(--space-2) 0 var(--space-3);
 }
@@ -1354,7 +1515,8 @@ button:disabled {
 .answer-row {
   margin-bottom: var(--space-2);
   padding: var(--space-2) var(--space-3);
-  border-left: 4px solid var(--border-control);
+  border: 1px solid var(--rule-soft);
+  border-radius: 4px 16px 16px 16px;
   background: var(--surface);
 }
 
@@ -1426,7 +1588,7 @@ button:disabled {
 .ask-next {
   margin: var(--space-3) 0 0;
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--accent);
+  border-radius: 14px;
   background: var(--accent-soft);
   font-size: 16px;
 }
@@ -1440,7 +1602,8 @@ button:disabled {
   margin: 0 0 var(--space-3);
   padding: var(--space-2) var(--space-3);
   border: 1.5px solid var(--rule-soft);
-  border-left: 5px solid var(--accent);
+  border-radius: 14px;
+  background: var(--surface);
   font-size: 16px;
 }
 
@@ -1537,13 +1700,12 @@ button:disabled {
 .nverify__msg {
   margin: 0;
   padding: var(--space-1) var(--space-2);
-  border-left: 4px solid var(--conf-partial);
+  border-radius: 12px;
   background: var(--conf-partial-soft);
   font-size: 15px;
 }
 
 .nverify__msg--ok {
-  border-left-color: var(--accent);
   background: var(--accent-soft);
 }
 
@@ -1563,7 +1725,7 @@ button:disabled {
 .publish-notice {
   margin-bottom: var(--space-4);
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--accent);
+  border-radius: 14px;
   background: var(--accent-soft);
   color: var(--accent);
   font-weight: 700;
@@ -1625,14 +1787,15 @@ button:disabled {
 .editor__origin {
   margin: 0 0 var(--space-4);
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--border-control);
+  border: 1px solid var(--rule-soft);
+  border-radius: 14px;
   background: var(--surface);
   font-size: 15px;
 }
 
 /* AI 초안은 노랑(일부만 확인됨 색)으로 — 아직 확인 전이라는 뜻을 색과 문장 둘 다로. */
 .editor__origin--ai {
-  border-left-color: var(--conf-partial);
+  border-color: var(--conf-partial);
   background: var(--conf-partial-soft);
   color: var(--conf-partial);
   font-weight: 700;
@@ -1722,7 +1885,7 @@ button:disabled {
 .qboard__notice {
   margin: 0 0 var(--space-3);
   padding: var(--space-2) var(--space-3);
-  border-left: 5px solid var(--accent);
+  border-radius: 14px;
   background: var(--accent-soft);
   font-weight: 700;
 }
@@ -1762,7 +1925,8 @@ button:disabled {
   align-items: center;
   justify-content: space-between;
   gap: var(--space-1);
-  border-left-style: dashed;
+  border-style: dashed;
+  border-color: var(--border-control);
 }
 
 .answer-row__hidden {
@@ -1929,17 +2093,21 @@ button:disabled {
   list-style: none;
 }
 
-/* 색 이름표. 글자 · 아이콘이 같이 붙어 색만으로 구분하지 않는다. */
+/*
+ * 색 이름표. 글자 · 아이콘이 같이 붙어 색만으로 구분하지 않는다.
+ * 누르는 곳이 아니라 목차라서, 버튼(높이 44px 이상)으로 보이지 않게 낮고 작게 둔다. 안쪽 화면의 분류 칩과 같은 크기다.
+ */
 .cover__cat {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  padding: 8px 18px 8px 14px;
+  padding: 5px 14px 5px 11px;
   border-radius: 999px;
   background: var(--cat-soft);
   color: var(--cat);
-  font-size: 16px;
+  font-size: 15px;
   font-weight: 900;
+  line-height: 1.4;
 }
 
 .cover__start {
@@ -2104,12 +2272,15 @@ button:disabled {
   min-width: 0;
 }
 
+/* 질문의 요점이 잘리지 않게 두 줄까지 보여 준다. 그보다 길면 두 줄째에서 말줄임. */
 .cover-q__title {
+  display: -webkit-box;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
   overflow: hidden;
   font-size: 17px;
   font-weight: 700;
-  white-space: nowrap;
-  text-overflow: ellipsis;
+  line-height: 1.45;
 }
 
 .cover-q__meta {

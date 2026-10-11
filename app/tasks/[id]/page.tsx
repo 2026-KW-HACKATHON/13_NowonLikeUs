@@ -3,6 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams } from 'next/navigation';
 import Link from 'next/link';
+import CategoryIcon from '@/components/CategoryIcon';
 import Masthead from '@/components/Masthead';
 import { CATEGORY_LABEL, asOfLabel, dueLabel } from '@/lib/labels';
 import { loadProfile } from '@/lib/profile';
@@ -114,7 +115,10 @@ export default function TaskDetailPage() {
 
       <div className="detail-head" data-category={task.category}>
         <div className="detail-head__top">
-          <span className="detail-head__cat">{CATEGORY_LABEL[task.category]}</span>
+          <span className="cat-chip">
+            <CategoryIcon category={task.category} />
+            {CATEGORY_LABEL[task.category]}
+          </span>
           <span className={`detail-head__due ${due.tone}`}>{due.text}</span>
         </div>
         <h1>{task.title}</h1>
@@ -151,22 +155,21 @@ export default function TaskDetailPage() {
                 <dd>{task.placeAddress}</dd>
               </div>
             )}
-            {task.placePhone && (
-              <div>
-                <dt>전화</dt>
-                <dd>
-                  <a className="tel" href={telHref(task.placePhone)}>
-                    {task.placePhone}
-                  </a>
-                </dd>
-              </div>
-            )}
           </dl>
+          {/* 전화 걸기는 이 화면의 핵심 동작이라 카드 폭 전체를 쓰는 버튼으로 둔다. 번호 글자는 DB 원문 그대로. */}
+          {task.placePhone && (
+            <a className="tel" href={telHref(task.placePhone)}>
+              <svg className="tel__icon" viewBox="0 0 24 24" aria-hidden="true" focusable="false">
+                <path d="M5 4h4l2 5-2.5 1.5a11 11 0 0 0 5 5L15 13l5 2v4a2 2 0 0 1-2 2A16 16 0 0 1 3 6a2 2 0 0 1 2-2" />
+              </svg>
+              {task.placePhone} 전화 걸기
+            </a>
+          )}
         </section>
       )}
 
       {task.linkUrl && (
-        <section className="detail-section">
+        <section className="detail-section detail-section--plain">
           <h2>온라인으로</h2>
           <a className="button-link" href={task.linkUrl} target="_blank" rel="noopener noreferrer">
             신청 페이지 열기
@@ -175,7 +178,7 @@ export default function TaskDetailPage() {
         </section>
       )}
 
-      <section className="detail-section">
+      <section className="detail-section detail-section--plain">
         <button
           type="button"
           className={`done-toggle${done ? ' on' : ''}`}
