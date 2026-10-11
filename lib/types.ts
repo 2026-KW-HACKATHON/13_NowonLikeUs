@@ -32,6 +32,7 @@ export interface Profile {
   /** 'YYYY-MM-DD' */
   moveInDate: string;
   hasCar: boolean;
+  /** 강아지를 키우는가. 이름은 hasPet 이지만 동물등록 의무 대상(개)만 뜻한다. 고양이는 등록 의무가 없다. */
   hasPet: boolean;
   isStudent: boolean;
 }
@@ -46,6 +47,7 @@ export interface TaskConditions {
   housingTypes: HousingType[];
   contractTypes: ContractType[];
   requiresCar: boolean;
+  /** 강아지 키우는 사람에게만. 종류와 상관없는 반려동물 규칙(기숙사 반입 금지 등)에는 쓰지 않는다. */
   requiresPet: boolean;
   studentOnly: boolean;
 }
@@ -105,7 +107,7 @@ export interface TaskDetailResponse {
  * 화면이 받는 카드에는 노출 조건이 없어서, 거르는 일은 서버만 할 수 있다.
  *
  * - 주거형태 · 계약형태: 거르기 + 질문 상황으로 DB 저장 + AI 에 한 줄로 전달
- * - 차량 · 반려동물 · 학생 여부: 거르기에만 쓴다. 저장하지 않고 외부로 보내지 않는다
+ * - 차량 · 강아지 · 학생 여부: 거르기에만 쓴다. 저장하지 않고 외부로 보내지 않는다
  * - 이사일: 카드의 남은 날짜 계산에만 쓴다. 저장하지 않고 외부로 보내지 않는다
  *
  * 구역은 보내지 않는다. 월계1동 안에서 구역별로 갈리는 할 일이 없다.

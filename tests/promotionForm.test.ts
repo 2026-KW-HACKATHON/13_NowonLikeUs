@@ -100,6 +100,6 @@ describe('audienceSummary', () => {
 
   it('걸린 조건을 글자로 나열한다', () => {
     expect(audienceSummary({ ...emptyForm(), housingTypes: ['ONE_ROOM', 'VILLA'], contractTypes: ['MONTHLY'], requiresPet: true }, labels))
-      .toBe('원룸 · 빌라, 월세, 반려동물 있음');
+      .toBe('원룸 · 빌라, 월세, 강아지 있음');
   });
 });

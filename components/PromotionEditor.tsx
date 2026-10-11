@@ -248,7 +248,7 @@ export default function PromotionEditor({
               </label>
               <label className="choice">
                 <input type="checkbox" checked={form.requiresPet} onChange={(e) => set('requiresPet', e.target.checked)} />
-                반려동물 있는 사람
+                강아지 키우는 사람
               </label>
               <label className="choice">
                 <input type="checkbox" checked={form.studentOnly} onChange={(e) => set('studentOnly', e.target.checked)} />
